@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools of the Trade</title>
+    <link rel="stylesheet" href="../suite.css">
+    <script src="../data/equipment.js"></script>
+    <script src="../data/database.js"></script>
+    <script src="../data/recipes.js"></script>
+    <script src="../data/Bestiary.js"></script>
+    <script src="../data/Items.js"></script>
+    <style>
+        h1.page-title { color: var(--gold); text-align: center; margin-top: 0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 3px; font-size: 2.1rem; }
+        .page-subtitle { text-align: center; color: var(--muted); margin-bottom: var(--space-6); font-style: italic; }
+        .tab-bar { display: flex; justify-content: center; border-bottom: 2px solid var(--border); margin-bottom: var(--space-8); }
+        .tab-btn { font-family: var(--font-body); background: transparent; color: var(--muted); border: none; font-size: 1rem; font-weight: bold; padding: 10px 22px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .2s, border-color .2s; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+        .tab-content { display: none; animation: fadeUp .25s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Target module */
+        .target-module { background: var(--depth-inset); padding: var(--space-5); border-radius: var(--radius-md); border: 1px dashed var(--border); margin-bottom: var(--space-6); text-align: center; }
+        .target-label { color: var(--muted); font-size: .78em; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: var(--space-3); }
+        .target-selects { display: flex; gap: var(--space-3); justify-content: center; max-width: 800px; margin: 0 auto; }
+        .pill-btn { font-family: var(--font-body); background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--muted); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: .82rem; font-weight: bold; transition: all .2s; text-transform: uppercase; }
+        .pill-btn.active { background: rgba(212,175,55,.12); border-color: var(--gold); color: var(--gold); box-shadow: 0 0 8px rgba(212,175,55,.3); }
+        .kill-conds { display: flex; gap: var(--space-5); padding: var(--space-3) var(--space-4); background: var(--depth-base); border: 1px solid var(--border); border-radius: var(--radius-sm); justify-content: center; align-items: center; }
+        .cond-lbl { display: flex; align-items: center; gap: var(--space-2); font-size: .88em; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        /* cb-destructive/overkill radio styles handled by suite.css */
+        .cond-lbl.destructive span { color:var(--red); }
+        .cond-lbl.overkill span { color:var(--gold); }
+
+        /* Tool cards */
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+        .tool-card { background: var(--depth-raised); border: 2px solid var(--border); border-radius: var(--radius-md); min-height: 380px; position: relative; overflow: hidden; transition: border-color .25s, box-shadow .25s, transform .25s; cursor: default; }
+        /* Ambient glow — mirrors index.html card treatment */
+        .tool-card::before { content:''; position:absolute; inset:0; border-radius:inherit; opacity:0; transition:opacity .3s; pointer-events:none; z-index:0; }
+        #card-book::before  { background:radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.09) 0%, transparent 70%); }
+        #card-quad::before  { background:radial-gradient(ellipse at 50% 0%, rgba(155,89,182,.09) 0%, transparent 70%); }
+        .tool-card.scanned:hover { transform:translateY(-3px); }
+        #card-book.scanned:hover  { border-color:rgba(212,175,55,.4); box-shadow:0 8px 30px rgba(212,175,55,.1); }
+        #card-quad.scanned:hover  { border-color:rgba(155,89,182,.4); box-shadow:0 8px 30px rgba(155,89,182,.1); }
+        .tool-card.scanned:hover::before { opacity:1; }
+        .card-hdr { margin:0; padding:12px 20px; font-size:1.1rem; text-transform:uppercase; letter-spacing:1px; background:var(--depth-deep); border-bottom:1px solid var(--border); position:relative; z-index:10; font-family:var(--font-display); }
+        .card-hdr.green  { color:var(--green); }
+        .card-hdr.purple { color:var(--green); }
+        .card-mask { font-family:var(--font-body); position:absolute; top:52px; left:0; right:0; bottom:0; background:var(--depth-inset); display:flex; align-items:center; justify-content:center; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.04); z-index:5; transition:all .5s; cursor:not-allowed; }
+        .tool-card.ready-green .card-mask  { background:var(--green);  color:#111; cursor:pointer; animation:pulseG 2s infinite; }
+        .tool-card.ready-purple .card-mask { background:var(--green); color:#111; cursor:pointer; animation:pulseP 2s infinite; }
+        @keyframes pulseG { 0%,100%{opacity:.82} 50%{opacity:1} }
+        @keyframes pulseP { 0%,100%{opacity:.82} 50%{opacity:1} }
+        .tool-card.scanned .card-mask { opacity:0; pointer-events:none; }
+        .card-body { padding:var(--space-4); opacity:0; transition:opacity .5s ease .3s; }
+        .tool-card.scanned .card-body { opacity:1; }
+        .warn-banner { display:none; background:rgba(231,76,60,.12); border:1px solid var(--red); color:var(--text); padding:var(--space-3); border-radius:var(--radius-sm); margin-bottom:var(--space-3); font-size:.88em; }
+
+        /* Readiness */
+        .ready-wrap { display:flex; flex-direction:column; align-items:center; margin-top:var(--space-6); background:var(--depth-raised); padding:var(--space-6) var(--space-5); border-radius:var(--radius-md); border:1px dashed var(--border); gap:var(--space-5); }
+        .ready-checks { display:flex; gap:var(--space-8); }
+        .ready-lbl { display:flex; align-items:center; gap:var(--space-3); font-size:.95em; font-weight:bold; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; color:var(--muted); transition:color .2s; }
+        .ready-lbl input[type=checkbox] { appearance:none; -webkit-appearance:none; width:18px; height:18px; background:var(--depth-inset); border:2px solid var(--border); border-radius:50%; cursor:pointer; transition:background .2s, border-color .2s, box-shadow .2s; flex-shrink:0; }
+        .ready-lbl input:checked { background:rgba(212,175,55,0.8); border-color:var(--gold); box-shadow:0 0 8px rgba(212,175,55,0.4); }
+        .ready-lbl:has(input:checked) { color:var(--gold); }
+        .dual-btn { position:relative; overflow:hidden; background:var(--depth-deep); color:#555; border:2px solid #333; padding:20px var(--space-5); border-radius:var(--radius-md); font-weight:bold; text-transform:uppercase; letter-spacing:2px; font-size:1.1em; width:100%; max-width:480px; cursor:not-allowed; transition:border-color .3s; font-family:var(--font-body); }
+        .fill-l, .fill-r { position:absolute; top:0; bottom:0; background:var(--gold); z-index:1; width:100%; left:0; transition:clip-path .5s cubic-bezier(.4,0,.2,1); }
+        .fill-l { clip-path:polygon(0 0,0 0,0 100%,0 100%); }
+        .fill-r { clip-path:polygon(100% 0,100% 0,100% 100%,100% 100%); }
+        .fill-l.on { clip-path:polygon(0 0,calc(50% - 10px) 0,calc(50% + 20px) 100%,0 100%); }
+        .fill-r.on { clip-path:polygon(calc(50% - 20px) 0,100% 0,100% 100%,calc(50% + 10px) 100%); }
+        .btn-txt { position:relative; z-index:2; transition:color .4s; }
+        .dual-btn.ready { border-color:var(--gold); cursor:pointer; }
+        .dual-btn.ready .btn-txt { color:var(--depth-inset); font-weight:900; }
+        .ready-info { display:flex; gap:var(--space-8); justify-content:center; }
+        .ready-info-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+        .ready-info-lbl { font-size:.7em; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+        .ready-info-val { font-size:.88em; font-weight:bold; color:var(--gold); text-transform:uppercase; }
+
+        /* Harvest panels */
+        .hpanel { background:var(--depth-inset); border:1px solid var(--border); border-radius:var(--radius-md); padding:var(--space-5); }
+        .hpanel-title { margin-top:0; font-size:1em; text-transform:uppercase; letter-spacing:1px; border-bottom:1px dashed var(--border); padding-bottom:var(--space-3); margin-bottom:var(--space-4); font-family:var(--font-display); }
+        .htbl { width:100%; border-collapse:collapse; font-size:.88em; }
+        .htbl th { text-align:left; font-size:.75em; text-transform:uppercase; padding:8px 4px; border-bottom:1px solid var(--border); }
+        .htbl td { padding:8px 4px; border-bottom:1px solid var(--border-subtle); vertical-align:top; }
+        #horder-body .hq-row { display:grid; grid-template-columns:24px 1fr auto; align-items:center; gap:var(--space-3); padding:9px var(--space-2); border-bottom:1px solid var(--border-subtle); border-radius:var(--radius-sm); cursor:grab; transition:background var(--transition), box-shadow var(--transition); touch-action:none; position:relative; }
+        #horder-body .hq-row:active { cursor:grabbing; }
+        #horder-body .hq-row.is-dragging { background:rgba(212,175,55,.08); box-shadow:0 4px 16px rgba(0,0,0,.5); border-color:rgba(212,175,55,.3); cursor:grabbing; z-index:100; opacity:.95; }
+        #horder-body .hq-row.drop-gap-above { margin-top:36px; transition:margin-top 150ms ease; }
+        #horder-body .hq-row.drop-gap-below { margin-bottom:36px; transition:margin-bottom 150ms ease; }
+        #horder-body .hq-handle { color:var(--muted); font-size:1em; display:flex; align-items:center; justify-content:center; opacity:.4; transition:opacity var(--transition); pointer-events:none; }
+        #horder-body .hq-row:hover .hq-handle { opacity:.9; }
+        #horder-body .hq-meta { display:flex; align-items:center; gap:var(--space-2); flex-shrink:0; }
+        .hpanel-fixed { height:420px; display:flex; flex-direction:column; }
+        .htbl-scroll-wrap { flex:1; overflow-y:auto; min-height:0; }
+
+        /* Check block */
+        .check-block { background:rgba(212,175,55,.06); border-left:4px solid var(--gold); padding:var(--space-3) var(--space-4); border-radius:0 var(--radius-sm) var(--radius-sm) 0; margin-bottom:var(--space-4); }
+        .check-row { display:flex; align-items:baseline; gap:var(--space-3); margin-bottom:var(--space-2); }
+        .check-row:last-child { margin-bottom:0; }
+        .ck-lbl  { color:var(--muted); font-size:.78em; text-transform:uppercase; min-width:90px; }
+        .ck-val  { color:var(--text); font-weight:bold; }
+        .ck-form { color:var(--muted); font-size:.85em; font-style:italic; }
+        .prof-tip { display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:rgba(155,89,182,.15); border:1px solid var(--purple); color:var(--purple); font-size:.68em; font-weight:bold; cursor:help; font-style:normal; flex-shrink:0; margin-left:4px; }
+
+        /* Roll inputs */
+        .roll-box { background:var(--depth-deep); padding:var(--space-4); border-radius:var(--radius-sm); border:1px solid var(--border); display:flex; flex-direction:column; gap:var(--space-3); }
+        .roll-row { display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding-bottom:var(--space-3); border-bottom:1px solid var(--border-subtle); }
+        .roll-row:last-child { border-bottom:none; padding-bottom:0; }
+        .roll-lbl { color:var(--text); font-size:.9em; font-weight:bold; }
+        .roll-fld { width:90px!important; text-align:center; padding:6px 8px!important; font-size:.88em!important; }
+
+        /* Outcome */
+        .out-item { padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle); display:flex; gap:var(--space-4); align-items:flex-start; }
+        .out-item:last-child { border-bottom:none; }
+        .out-st { flex-shrink:0; width:100px; font-weight:bold; font-size:.85em; }
+        .out-ok { color:var(--green); }
+        .out-no { color:var(--red); }
+        .out-dt { flex:1; display:flex; flex-direction:column; gap:3px; line-height:1.5; }
+        .ruined { color:var(--red); font-style:italic; font-size:.8em; }
+
+        /* Rupture panel */
+        .rupture { background:rgba(231,76,60,.08); border:2px solid var(--red); border-radius:var(--radius-md); padding:var(--space-5); margin:var(--space-4) 0; animation:rShake .4s ease; }
+        @keyframes rShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+        .rupture-head { font-family:var(--font-display); color:var(--red); font-size:1.1em; text-transform:uppercase; letter-spacing:1px; margin-bottom:var(--space-2); }
+        .rupture-body { color:var(--text); font-size:.95em; line-height:1.6; padding:var(--space-3); background:var(--depth-inset); border-radius:var(--radius-sm); border-left:3px solid var(--red); margin-bottom:var(--space-3); }
+        .rupture-dm   { color:var(--gold); font-size:.85em; font-style:italic; }
+
+        .raw-export { background:var(--depth-deep); padding:var(--space-4); border-radius:var(--radius-sm); border:1px solid var(--border); color:var(--muted); font-family:monospace; white-space:pre-wrap; font-size:.9em; line-height:1.7; outline:none; }
+        .raw-export:focus { border-color:var(--green); }
+
+        /* Workshop */
+        .ws-roster { background:var(--depth-inset); border:1px solid var(--border); border-radius:var(--radius-md); padding:var(--space-4); margin-bottom:var(--space-5); }
+        .ws-ctrl { display:flex; gap:var(--space-3); margin-bottom:var(--space-3); align-items:center; }
+        .filter-tog { display:flex; background:var(--depth-deep); border:1px solid var(--border); border-radius:var(--radius-sm); padding:3px; gap:2px; flex-shrink:0; }
+        /* Workshop filters & search */
+        .fil-btn { font-family:var(--font-body); background:transparent; border:none; color:var(--muted); font-size:.78em; padding:4px 10px; border-radius:3px; cursor:pointer; text-transform:uppercase; transition:all .2s; }
+        .fil-btn.active { background:var(--depth-raised); color:var(--gold); }
+        .ws-empty { color:var(--muted); font-style:italic; font-size:.88em; padding:var(--space-4); text-align:center; }
+        .cd-tmr { font-family:monospace; font-size:.8em; background:var(--depth-inset); padding:2px 6px; border-radius:3px; color:var(--red); border:1px solid var(--border); }
+
+        /* Blueprint grid */
+        .ws-grid-wrap { position:relative; }
+        .ws-grid { display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:110px; gap:var(--space-3); }
+        /* Card base — lift+glow on hover like index page */
+        .ws-card { background:var(--depth-raised); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; cursor:pointer; transition:border-color .25s, background .25s, transform .25s, box-shadow .25s; position:relative; display:flex; flex-direction:column; overflow:hidden; }
+        .ws-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.09) 0%, transparent 70%); opacity:0; transition:opacity .25s; pointer-events:none; }
+        .ws-card:hover { border-color:var(--gold); transform:translateY(-3px); box-shadow:0 8px 28px rgba(212,175,55,.11); }
+        .ws-card:hover::before { opacity:1; }
+        .ws-card.sel { border-color:var(--gold); background:rgba(212,175,55,.09); transform:translateY(-2px); box-shadow:0 6px 20px rgba(212,175,55,.13); }
+        .ws-card.sel::before { opacity:1; }
+        /* Cooldown card */
+        .ws-card.oncd { border-color:rgba(231,76,60,.3); cursor:not-allowed; opacity:.6; }
+        .ws-card.oncd:hover { transform:none; box-shadow:none; border-color:rgba(231,76,60,.3); background:var(--depth-raised); }
+        .ws-card.oncd::before { display:none; }
+        /* Blank filler card — no text, no hover */
+        .ws-card.blank { opacity:.25; cursor:default; pointer-events:none; }
+        .ws-card.blank:hover { transform:none; box-shadow:none; border-color:var(--border); }
+        .ws-card.blank::before { display:none; }
+        /* No-attempt card — has a Begin Project button */
+        .ws-card.fresh { }
+        .ws-card-begin-btn { background:var(--green); color:#111; font-family:var(--font-display); font-size:.75em; letter-spacing:1.5px; text-transform:uppercase; border:none; border-radius:var(--radius-sm); padding:8px 16px; cursor:pointer; margin-top:auto; width:100%; font-weight:700; transition:filter .2s; }
+        .ws-card:hover .ws-card-begin-btn { filter:brightness(1.08); }
+        /* Card content */
+        .ws-card-name { font-size:.9em; font-weight:600; color:var(--text); margin-bottom:10px; padding-right:36px; line-height:1.3; }
+        .ws-card.sel .ws-card-name { color:var(--gold); }
+        .ws-card-atts { font-size:.72em; color:var(--muted); position:absolute; top:10px; right:10px; }
+        /* Pills — always 3 in a row, fixed, no wrap */
+        .ws-card-pills { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-top:auto; }
+        .ws-kpill { font-size:.7em; padding:4px 6px; border-radius:3px; font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; isolation:isolate; }
+        /* Default dim state */
+        .ws-kpill.kp-type { background:rgba(212,175,55,.12); color:var(--gold); border:1px solid rgba(212,175,55,.25); }
+        .ws-kpill.kp-comp { background:rgba(46,204,113,.1);  color:var(--green); border:1px solid rgba(46,204,113,.22); }
+        .ws-kpill.kp-ess  { background:rgba(212,175,55,.1);  color:var(--gold);  border:1px solid rgba(212,175,55,.22); }
+        .ws-kpill.kp-unk  { opacity:.4; }
+        /* Filled pill — ::before floods in, border+label stay visible on top */
+        .ws-kpill::before { content:''; position:absolute; inset:0; border-radius:inherit; opacity:0; z-index:-1; transition:none; }
+        .ws-kpill.filled { color:var(--depth-inset) !important; font-weight:700; }
+        .ws-kpill.filled.kp-type::before { background:var(--gold);  opacity:1; }
+        .ws-kpill.filled.kp-comp::before { background:var(--green); opacity:1; }
+        .ws-kpill.filled.kp-ess::before  { background:var(--gold);  opacity:1; }
+        /* Animate only the newly-changed pill — circle expands behind text */
+        @keyframes pillFlood { 0%{clip-path:circle(0% at 50% 50%)} 100%{clip-path:circle(150% at 50% 50%)} }
+        .ws-kpill.filled.anim::before { animation:pillFlood .4s cubic-bezier(.4,0,.2,1) forwards; }
+        /* Cooldown timer — sits between name and pills so layout stays aligned */
+        .ws-card-cd { display:flex; align-items:center; justify-content:flex-end; margin-bottom:6px; }
+        /* Pagination */
+        .ws-pager { display:flex; align-items:center; justify-content:center; gap:var(--space-4); margin-top:var(--space-3); }
+        .ws-page-btn { font-family:var(--font-body); background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 14px; border-radius:var(--radius-sm); cursor:pointer; font-size:.82em; transition:all .2s; }
+        .ws-page-btn:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); }
+        .ws-page-btn:disabled { opacity:.3; cursor:default; }
+        .ws-page-info { font-size:.8em; color:var(--muted); }
+
+        /* Workshop work area */
+        .ws-work { display:grid; grid-template-columns:1fr 1.3fr; gap:var(--space-6); align-items:stretch; opacity:0; max-height:0; overflow:hidden; transition:opacity .35s ease, max-height .4s ease; pointer-events:none; }
+        .ws-work.on { opacity:1; max-height:1200px; pointer-events:auto; }
+        .ws-pools { display:flex; flex-direction:column; gap:var(--space-4); height:100%; }
+        .ws-box { background:var(--depth-raised); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; overflow-y:auto; flex:1; min-height:0; }
+        .ws-right-col { display:flex; flex-direction:column; height:100%; }
+        .formula-wrap { flex:1; display:flex; flex-direction:column; min-height:0; }
+        .ws-right-col { display:flex; flex-direction:column; height:100%; }
+        .formula-wrap { flex:1; display:flex; flex-direction:column; min-height:0; }
+        .ws-box-ttl { font-size:.75em; text-transform:uppercase; letter-spacing:.5px; padding-bottom:var(--space-2); margin-bottom:var(--space-2); border-bottom:1px dashed var(--border); position:sticky; top:-12px; background:var(--depth-raised); z-index:2; }
+        .ws-pi { padding:7px 12px; background:var(--depth-base); border:1px solid var(--border-subtle); margin-bottom:6px; border-radius:var(--radius-sm); cursor:pointer; font-size:.88em; transition:all .2s; }
+        .ws-pi:hover { border-color:var(--gold); background:rgba(212,175,55,.08); }
+        .ws-pi.sel.type-sel { border-color:var(--gold); background:rgba(212,175,55,.12); color:var(--gold); font-weight:bold; }
+        .ws-pi.sel.comp-sel { border-color:var(--green); background:rgba(46,204,113,.1); color:var(--green); font-weight:bold; }
+
+        /* Custom essence dropdown */
+        .ess-wrap { position:relative; width:100%; }
+        .ess-sel-btn { width:100%; text-align:center; border:1px dashed var(--border); padding:13px; border-radius:var(--radius-sm); font-size:.95em; color:var(--muted); background:var(--depth-inset); transition:all .3s; box-sizing:border-box; cursor:pointer; font-family:var(--font-body); }
+        .ess-sel-btn.on { border-style:solid; border-color:var(--gold); color:var(--text); box-shadow:inset 0 0 10px rgba(212,175,55,.1); }
+        .ess-sel-btn { isolation:isolate; position:relative; overflow:hidden; }
+        .ess-sel-btn::before { content:''; position:absolute; inset:0; border-radius:inherit; opacity:0; z-index:-1; background:var(--gold); }
+        .ess-sel-btn.filled-tl { color:#111 !important; border-color:var(--gold); border-style:solid; font-weight:700; }
+        .ess-sel-btn.filled-tl::before { opacity:1; }
+        .ess-sel-btn.filled-tl.anim::before { animation:fslotFlood .4s cubic-bezier(.4,0,.2,1) forwards; }
+        .ess-sel-btn.filled-tl { background:var(--gold); color:#111 !important; border-color:var(--gold); border-style:solid; font-weight:700; animation:fslotFill .35s ease forwards; }
+        .ess-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--depth-inset); border:1px solid var(--gold); border-radius:var(--radius-sm); z-index:100; overflow:hidden; }
+        .ess-dropdown.open { display:block; }
+        .ess-opt { padding:10px 14px; cursor:pointer; font-size:.9em; transition:background .15s; text-align:center; }
+        .ess-opt:hover { background:rgba(212,175,55,.1); color:var(--gold); }
+        .ess-opt.chosen { color:var(--gold); font-weight:bold; background:rgba(212,175,55,.08); }
+
+        /* Formula bar */
+        .formula-bar { background:var(--depth-deep); border:2px solid rgba(155,89,182,.35); border-radius:var(--radius-md); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-4); align-items:center; flex:1; min-height:0; }
+        .formula-ttl { font-family:var(--font-display); font-size:.9em; text-transform:uppercase; letter-spacing:2px; border-bottom:1px dashed var(--border); padding-bottom:var(--space-3); width:100%; text-align:center; }
+        .fslot { width:100%; text-align:center; border:1px dashed var(--border); padding:13px; border-radius:var(--radius-sm); font-size:.95em; color:var(--muted); background:var(--depth-inset); transition:border-color .3s, box-shadow .3s, color .3s, background .3s; box-sizing:border-box; position:relative; overflow:hidden; }
+        .fslot.on { border-style:solid; color:var(--text); }
+        .fslot.tp { border-color:var(--gold); box-shadow:inset 0 0 10px rgba(212,175,55,.1); }
+        .fslot.tb { border-color:var(--green); box-shadow:inset 0 0 10px rgba(46,204,113,.15); }
+        .fslot.tg { border-color:var(--green);  box-shadow:inset 0 0 10px rgba(46,204,113,.15); }
+        .fslot.tl { border-color:var(--gold);   box-shadow:inset 0 0 10px rgba(212,175,55,.15); }
+        /* Filled fslot states — ::before floods in behind text, border stays visible */
+        @keyframes fslotFlood { 0%{clip-path:circle(0% at 50% 50%)} 100%{clip-path:circle(150% at 50% 50%)} }
+        .fslot { isolation:isolate; }
+        .fslot::before { content:''; position:absolute; inset:0; border-radius:inherit; opacity:0; z-index:-1; }
+        .fslot.filled-tb { color:#111 !important; border-color:var(--green); border-style:solid; font-weight:600; }
+        .fslot.filled-tg { color:#111 !important; border-color:var(--green); border-style:solid; font-weight:600; }
+        .fslot.filled-tl { color:#111 !important; border-color:var(--gold);  border-style:solid; font-weight:600; }
+        .fslot.filled-tb::before { background:var(--green);  opacity:1; }
+        .fslot.filled-tg::before { background:var(--green); opacity:1; }
+        .fslot.filled-tl::before { background:var(--gold);  opacity:1; }
+        /* anim class triggers the flood — only added on first fill, not swaps */
+        .fslot.filled-tb.anim::before,
+        .fslot.filled-tg.anim::before,
+        .fslot.filled-tl.anim::before { animation:fslotFlood .4s cubic-bezier(.4,0,.2,1) forwards; }
+        /* Slot fill animation */
+        @keyframes slotFill  { 0%{transform:scale(.97);opacity:.5} 60%{transform:scale(1.02)} 100%{transform:scale(1);opacity:1} }
+        @keyframes slotSwap  { 0%{transform:translateY(-3px);opacity:.6} 100%{transform:translateY(0);opacity:1} }
+        @keyframes slotClear { 0%{opacity:1} 100%{opacity:0;transform:scale(.96)} }
+        .fslot.anim-fill  { animation:slotFill .3s ease forwards; }
+        .fslot.anim-swap  { animation:slotSwap .2s ease forwards; }
+        .fslot.anim-clear { animation:slotClear .25s ease forwards; }
+        .math-sym { font-size:1.4em; color:var(--muted); font-weight:bold; position:relative; width:100%; text-align:center; transition:color .3s, text-shadow .3s; }
+        .formula-foot { width:100%; display:flex; flex-direction:column; gap:var(--space-3); }
+
+        /* Connecting line system */
+        .math-sym.lit-eq       { color:var(--gold);   text-shadow:0 0 14px rgba(212,175,55,.7); }
+        .math-sym.lit-plus-all { color:var(--gold);   text-shadow:0 0 14px rgba(212,175,55,.6); }
+        .math-sym::before, .math-sym::after {
+            content:''; position:absolute; left:50%; transform:translateX(-50%);
+            width:2px; border-radius:1px; background:currentColor; opacity:0;
+            transition:height .35s ease, opacity .35s ease;
+            height:0;
+        }
+        .math-sym::before { bottom:calc(100% + 3px); }
+        .math-sym::after  { top:calc(100% + 3px); }
+        .math-sym.line-up::before   { height:10px; opacity:.4; }
+        .math-sym.line-down::after  { height:10px; opacity:.4; }
+        .math-sym.line-up.line-down::before,
+        .math-sym.line-up.line-down::after { height:12px; opacity:.75; }
+        /* Orbit ring — appears when both sides connected */
+        @keyframes orbitRing { from{transform:translateX(-50%) rotate(0deg)} to{transform:translateX(-50%) rotate(360deg)} }
+        @keyframes lineWobble { 0%,100%{scaleY(1)} 25%{scaleY(1.3)} 50%{scaleY(.8)} 75%{scaleY(1.15)} }
+        .math-sym.ring::before,
+        .math-sym.ring::after { height:12px; opacity:.85; }
+        .math-sym .sym-ring {
+            display:none; position:absolute; left:50%; top:50%;
+            transform:translate(-50%,-50%);
+            width:28px; height:28px;
+            border-radius:50%;
+            border:1.5px solid currentColor;
+            opacity:0;
+            transition:opacity .4s ease;
+            pointer-events:none;
+        }
+        .math-sym .sym-ring::after {
+            content:''; position:absolute; top:-3px; left:50%; transform:translateX(-50%);
+            width:5px; height:5px; border-radius:50%;
+            background:currentColor;
+            animation:orbitRing 2.5s linear infinite;
+            transform-origin:0 calc(14px + 3px);
+        }
+        .math-sym.ring .sym-ring { display:block; opacity:.7; }
+        /* Wobble on swap while lines are lit */
+        @keyframes symWobble { 0%,100%{transform:scale(1)} 20%{transform:scale(1.25) rotate(-8deg)} 40%{transform:scale(.9) rotate(6deg)} 60%{transform:scale(1.15) rotate(-4deg)} 80%{transform:scale(.97) rotate(2deg)} }
+        .math-sym.wobble { animation:symWobble .5s ease; }
+
+        /* Attempt history — inside formula bar, pinned to bottom */
+        .att-hist { display:none; background:var(--depth-inset); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; overflow-y:auto; max-height:150px; width:100%; box-sizing:border-box; margin-top:auto; }
+        .att-hist.on { display:block; }
+        .att-hist-ttl { font-size:.75em; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding-bottom:var(--space-2); margin-bottom:var(--space-2); border-bottom:1px dashed var(--border); }
+        .att-row { display:flex; gap:var(--space-2); align-items:center; margin-bottom:6px; }
+        .att-num { color:var(--muted); min-width:20px; font-size:.85em; }
+        .att-pill { flex:1; padding:4px 6px; border-radius:3px; text-align:center; font-size:.82em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border:1px solid transparent; cursor:default; }
+        .att-pill.ok  { background:rgba(46,204,113,.1);  border-color:rgba(46,204,113,.35); color:var(--green); }
+        .att-pill.bad { background:rgba(231,76,60,.08); border-color:rgba(231,76,60,.3);  color:var(--red); }
+
+        /* Synthesis modal */
+        .synth-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:10001; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+        .synth-box { background:var(--depth-surface); border:2px solid var(--border); padding:50px 40px; border-radius:var(--radius-md); text-align:center; max-width:520px; width:90%; position:relative; overflow:hidden; }
+        .synth-box::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity .8s; pointer-events:none; }
+        .synth-box.ok  { border-color:var(--gold); animation:sGlow .6s ease forwards; }
+        .synth-box.ok::before { background:radial-gradient(ellipse at center,rgba(212,175,55,.14) 0%,transparent 70%); opacity:1; }
+        .synth-box.bad { border-color:var(--red); animation:sShake .5s ease; }
+        @keyframes sGlow  { 0%{box-shadow:0 0 0 rgba(212,175,55,0)} 50%{box-shadow:0 0 60px rgba(212,175,55,.5)} 100%{box-shadow:0 0 30px rgba(212,175,55,.22)} }
+        @keyframes sShake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)} 30%{transform:translateX(8px)} 45%{transform:translateX(-5px)} 60%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
+        .synth-st { font-family:var(--font-display); font-size:1.3em; text-transform:uppercase; letter-spacing:2px; margin:0 0 var(--space-3); }
+        .synth-it { font-family:var(--font-display); font-size:1.5em; min-height:1.4em; margin:var(--space-3) 0; }
+        .synth-ds { color:var(--text); font-size:.95em; line-height:1.6; margin-bottom:var(--space-6); }
+        .synth-cd { font-family:monospace; color:var(--red); font-size:1em; margin-bottom:var(--space-4); display:none; }
+
+        /* Harvest modal */
+        .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+        .modal-bx { background:var(--depth-inset); border:2px solid var(--gold); padding:40px; border-radius:var(--radius-md); text-align:center; max-width:480px; box-shadow:0 0 40px rgba(212,175,55,.14); }
+
+        /* Tooltip */
+        .gtip { position:fixed; visibility:hidden; opacity:0; width:270px; background:var(--depth-inset); color:var(--text); padding:12px 14px; z-index:9999; border:1px solid var(--purple); box-shadow:0 4px 20px rgba(0,0,0,.8); font-size:.88em; pointer-events:none; border-radius:var(--radius-sm); transition:opacity .1s; line-height:1.5; }
+
+        /* Recipe book */
+        .rb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:var(--space-5); }
+        .rc { background:var(--depth-raised); border:1px solid var(--border); border-top:3px solid var(--gold); border-radius:var(--radius-md); padding:var(--space-5); position:relative; overflow:hidden; display:flex; flex-direction:column; transition:border-color .25s, box-shadow .25s, transform .25s; isolation:isolate; }
+        .rc::before { content:''; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.1) 0%, transparent 70%); opacity:0; transition:opacity .25s; pointer-events:none; z-index:0; }
+        .rc:hover { border-color:var(--gold); transform:translateY(-3px); box-shadow:0 8px 28px rgba(212,175,55,.11); }
+        .rc:hover::before { opacity:1; }
+        .rc h3 { color:var(--gold); margin:0 0 4px; font-size:1.05rem; padding-right:80px; line-height:1.3; position:relative; z-index:1; }
+        .rc-acts { position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:var(--space-2); z-index:2; }
+        .pin-btn { background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--border); transition:color .2s; padding:0; line-height:1; }
+        .pin-btn.on { color:var(--gold); text-shadow:0 0 6px rgba(212,175,55,.5); }
+        .rc-tags { font-size:.75em; color:var(--muted); text-transform:uppercase; margin-bottom:var(--space-3); letter-spacing:.5px; position:relative; z-index:1; }
+        .rc-meta { font-size:.82em; color:var(--muted); margin-bottom:var(--space-2); position:relative; z-index:1; }
+        .rc-comp { font-size:.85em; color:var(--text); margin-top:var(--space-3); border-top:1px dashed var(--border); padding-top:var(--space-3); line-height:1.6; position:relative; z-index:1; }
+
+        /* Cauldron */
+        .cld-layout { display:grid; grid-template-columns:230px 1fr; gap:var(--space-6); }
+        .cld-list { background:var(--depth-inset); border:1px solid rgba(212,175,55,.3); border-radius:var(--radius-md); padding:var(--space-3); max-height:500px; overflow-y:auto; display:flex; flex-direction:column; gap:var(--space-2); }
+        .cld-item { padding:8px 12px; background:var(--depth-raised); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; font-size:.9em; transition:all .2s; }
+        .cld-item:hover { border-color:var(--gold); background:rgba(212,175,55,.06); }
+        .cld-item.sel { border-color:var(--gold); background:rgba(212,175,55,.1); color:var(--gold); font-weight:bold; }
+        .cld-ws { display:flex; flex-direction:column; gap:var(--space-5); }
+        .cld-config-wrap { opacity:0; max-height:0; overflow:hidden; transition:opacity .35s ease, max-height .4s ease; pointer-events:none; }
+        .cld-config-wrap.on { opacity:1; max-height:2400px; pointer-events:auto; }
+        .cld-idle { text-align:center; color:var(--muted); font-style:italic; padding:60px var(--space-5); transition:opacity .3s; }
+        .cld-idle.hidden { opacity:0; pointer-events:none; }
+        .cook-ck { background:rgba(212,175,55,.06); border-left:4px solid var(--gold); padding:var(--space-3) var(--space-4); border-radius:0 var(--radius-sm) var(--radius-sm) 0; margin-bottom:var(--space-4); }
+        .cook-ck-lbl { color:var(--muted); font-size:.75em; text-transform:uppercase; margin-bottom:4px; }
+        .cook-ck-val { color:var(--gold); font-size:.95em; font-weight:bold; }
+        .cook-ck-form { color:var(--text); font-size:.85em; font-style:italic; margin-top:3px; display:flex; align-items:center; gap:4px; }
+        .meal-bufs { background:rgba(212,175,55,.04); border:1px dashed rgba(212,175,55,.3); border-radius:var(--radius-md); padding:var(--space-5); }
+
+        /* Raw diet */
+        .raw-panel { background:var(--depth-inset); border:1px solid rgba(231,76,60,.35); border-radius:var(--radius-md); padding:var(--space-5); }
+        .raw-ttl { color:var(--red); font-family:var(--font-display); margin-top:0; font-size:1em; text-transform:uppercase; letter-spacing:1px; border-bottom:1px dashed rgba(231,76,60,.35); padding-bottom:var(--space-3); margin-bottom:var(--space-4); }
+        .raw-crit { display:flex; gap:var(--space-4); background:var(--depth-deep); padding:var(--space-3); border-radius:var(--radius-sm); border:1px solid var(--border); justify-content:center; margin-bottom:var(--space-4); }
+        .raw-crit-lbl { display:flex; align-items:center; gap:var(--space-2); font-size:.88em; cursor:pointer; }
+        .raw-crit-lbl input[type=radio] { appearance:none; -webkit-appearance:none; width:18px; height:18px; border-radius:50%; border:2px solid var(--border); background:var(--depth-inset); cursor:pointer; transition:background .2s, border-color .2s, box-shadow .2s; flex-shrink:0; }
+        .raw-crit-lbl input[type=radio]:checked { background:rgba(46,204,113,0.8); border-color:var(--green); box-shadow:0 0 6px rgba(46,204,113,0.4); }
+        #hlp-chk:checked { background:rgba(46,204,113,0.8); border-color:var(--green); box-shadow:0 0 6px rgba(46,204,113,0.4); }
+
+        /* Misc */
+        .rarity-common     { color: #aaa;     border-color: #aaa;     }
+        .rarity-uncommon   { color: #2ecc71;  border-color: #2ecc71;  }
+        .rarity-rare       { color: #3498db;  border-color: #3498db;  }
+        .rarity-very-rare  { color: #9b59b6;  border-color: #9b59b6;  }
+        .rarity-legendary  { color: #d4af37;  border-color: #d4af37;  }
+        .rarity-artifact   { color: #e74c3c;  border-color: #e74c3c;  }
+        .add-btn { font-family:var(--font-body); background:var(--depth-raised); color:var(--green); border:1px solid var(--green); padding:4px 8px; border-radius:var(--radius-sm); cursor:pointer; font-size:.8em; font-weight:bold; transition:all .2s; width:100%; text-align:center; text-transform:uppercase; }
+        .add-btn:hover { background:var(--green); color:#111; }
+        .rm-btn { background:transparent; color:var(--red); border:none; font-size:1.2em; cursor:pointer; padding:0 4px; transition:transform .2s; }
+        .rm-btn:hover { transform:scale(1.2); }
+    </style>
+</head>
+<body>
+<div id="gtip" class="gtip"></div>
+
+<!-- Harvest confirm modal -->
+<div id="harvest-modal" class="modal-ov">
+  <div class="modal-bx">
+    <h2 style="color:var(--gold);margin-top:0;font-family:var(--font-display);font-size:1.6em;">Confirm Harvest</h2>
+    <p style="color:var(--text);margin-bottom:28px;line-height:1.6;">Are you sure you're ready to harvest?<br><span style="color:var(--muted);font-size:.88em;">There's no going back after this.</span></p>
+    <div style="display:flex;gap:16px;">
+      <button class="btn-primary" style="background:var(--gold);margin:0;" onclick="confirmHarvest()">Yes, Harvest</button>
+      <button class="btn-primary" style="background:var(--depth-raised);color:var(--text);margin:0;" onclick="document.getElementById('harvest-modal').style.display='none'">No, Go Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Synthesis modal -->
+<div id="synth-modal" class="synth-modal">
+  <div id="synth-box" class="synth-box">
+    <div id="synth-st" class="synth-st"></div>
+    <div id="synth-it" class="synth-it"></div>
+    <p   id="synth-ds" class="synth-ds"></p>
+    <div id="synth-cd" class="synth-cd"></div>
+    <button class="btn-primary" style="width:auto;padding:12px 40px;margin:0 auto;" onclick="document.getElementById('synth-modal').style.display='none'">Acknowledge</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="nav-header">
+    <button class="nav-btn" onclick="window.location.reload()">Reset &#10227;</button>
+  </div>
+  <h1 class="page-title">Tools of the Trade</h1>
+  <div class="page-subtitle">A Hunter's Guide to Harvesting and Artifice</div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('t-field',this)">Field Tools</button>
+    <button class="tab-btn" onclick="switchTab('t-workshop',this)">The Workshop</button>
+    <button class="tab-btn" onclick="switchTab('t-recipes',this)">Recipe Book</button>
+    <button class="tab-btn" onclick="switchTab('t-cauldron',this)">The Cauldron</button>
+    <button class="tab-btn" onclick="switchTab('t-socketing',this)">Socketing</button>
+  </div>
+
+  <!-- FIELD TOOLS -->
+  <div id="t-field" class="tab-content active">
+    <div class="target-module">
+      <span class="target-label">Targeted Corpse</span>
+      <div class="target-selects">
+        <select id="type-sel" onchange="loadModifiers()" style="flex:2;margin:0;"><option value="" disabled selected>— Select Base Type —</option></select>
+        <select id="size-sel" onchange="primeScanners()" style="flex:1;margin:0;">
+          <option value="Tiny">Tiny</option><option value="Small">Small</option><option value="Medium" selected>Medium</option>
+          <option value="Large">Large</option><option value="Huge">Huge</option><option value="Gargantuan">Gargantuan</option>
+        </select>
+        <select id="ess-sel" onchange="primeScanners()" style="flex:1.5;margin:0;">
+          <option value="">— No Essence —</option>
+          <option>Frail Essence</option><option>Robust Essence</option><option>Potent Essence</option>
+          <option>Mythic Essence</option><option>Deific Essence</option>
+        </select>
+      </div>
+      <div id="mod-wrap" style="display:none;max-width:800px;margin:var(--space-4) auto 0;">
+        <div style="font-size:.8em;color:var(--muted);margin-bottom:var(--space-2);">Specific Modifiers (select multiple):</div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);justify-content:center;" id="mod-pills"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:var(--space-5);align-items:center;margin-top:var(--space-5);">
+        <div></div>
+        <div class="kill-conds">
+          <label class="cond-lbl destructive"><input type="radio" id="chk-dest" name="chk-dest" onchange="primeScanners()"><span>Destructive Kill</span></label>
+          <label class="cond-lbl overkill"><input type="radio" id="chk-over" name="chk-over" onchange="primeScanners()"><span>Massive Damage</span></label>
+        </div>
+        <div style="display:flex;gap:var(--space-3);">
+          <button id="btn-cancel" class="nav-btn" style="display:none;color:var(--red);border-color:var(--red);" onclick="window.location.reload()">Abandon Harvest</button>
+          <button id="btn-new"    class="nav-btn" style="display:none;color:var(--gold);border-color:var(--gold);" onclick="window.location.reload()">New Harvest &#10227;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner cards -->
+    <div id="v-scan">
+      <div class="tool-grid">
+        <div id="card-book" class="tool-card">
+          <h2 class="card-hdr green">The Book</h2>
+          <div id="mask-book" class="card-mask" onclick="execBook()">Offline</div>
+          <div class="card-body" id="body-book">
+            <div id="warn-banner" class="warn-banner"><strong>Corpse Ruined:</strong> One or more parts are damaged — Disadvantage on harvest rolls!</div>
+            <p style="color:var(--muted);font-style:italic;font-size:.88em;margin-top:0;">The book opens to a page showing the creature's anatomy.</p>
+            <div id="book-res"></div>
+          </div>
+        </div>
+        <div id="card-quad" class="tool-card">
+          <h2 class="card-hdr purple">The Quadnoculars</h2>
+          <div id="mask-quad" class="card-mask" onclick="execQuad()">Offline</div>
+          <div class="card-body" id="body-quad" style="display:flex;flex-direction:column;height:calc(100% - 52px);box-sizing:border-box;">
+            <p style="color:var(--muted);font-style:italic;font-size:.88em;margin-top:0;">A spark of inspiration enters your mind...</p>
+            <div id="quad-res" style="flex:1;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ready-wrap" id="ready-mod" style="display:none;">
+        <div class="ready-checks">
+          <label class="ready-lbl"><input type="checkbox" id="chk-assess" onchange="dualFill()"><span>Assessor Assigned</span></label>
+          <label class="ready-lbl"><input type="checkbox" id="chk-carve"  onchange="dualFill()"><span>Carver Assigned</span></label>
+        </div>
+        <button id="btn-init" class="dual-btn" disabled onclick="initHarvest()">
+          <div class="fill-l" id="fl"></div><div class="fill-r" id="fr"></div>
+          <span class="btn-txt">We Are Ready to Harvest</span>
+        </button>
+        <div class="ready-info">
+          <div class="ready-info-item">
+            <span class="ready-info-lbl">Time Required</span>
+            <span class="ready-info-val" id="p-time">10 mins</span>
+          </div>
+          <div class="ready-info-item">
+            <span class="ready-info-lbl">Helpers</span>
+            <span class="ready-info-val" id="p-helpers">0 Max</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Harvest view -->
+    <div id="v-harvest" style="display:none;">
+      <div class="tool-grid" style="margin-bottom:var(--space-6);">
+        <div class="hpanel hpanel-fixed" style="border-color:var(--green);">
+          <h2 class="hpanel-title" style="color:var(--green);">Harvest List</h2>
+          <table class="htbl"><thead><tr>
+            <th style="color:var(--green);width:45%;">Component</th>
+            <th style="color:var(--green);width:12%;">DC</th>
+            <th style="color:var(--green);width:23%;">Tags</th>
+            <th style="color:var(--green);width:20%;">Action</th>
+          </tr></thead></table>
+          <div class="htbl-scroll-wrap"><table class="htbl"><tbody id="hlist-body"></tbody></table></div>
+        </div>
+        <div class="hpanel hpanel-fixed" style="border-color:var(--gold);">
+          <h2 class="hpanel-title" style="color:var(--gold);">Harvest Order</h2>
+          <div class="htbl-scroll-wrap"><div id="horder-body" style="position:relative;user-select:none;min-height:40px;"></div></div>
+          <div style="text-align:right;padding-top:var(--space-3);border-top:1px dashed var(--border);margin-top:auto;">
+            <span style="color:var(--muted);">Target DC: </span>
+            <strong style="color:var(--gold);font-size:1.4em;" id="total-dc">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="hpanel" style="border-color:var(--gold);">
+        <h2 class="hpanel-title" style="color:var(--gold);">Harvest Checks</h2>
+        <div class="check-block">
+          <div class="check-row">
+            <span class="ck-lbl">Assessment</span>
+            <span class="ck-val" id="ck-assess-val">—</span>
+            <i class="prof-tip" data-tip="Roll a d20 and add the listed ability modifier. If you have proficiency in the listed skill or tool, also add your Proficiency Bonus.">?</i>
+            <span class="ck-form" id="ck-assess-form"></span>
+          </div>
+          <div class="check-row">
+            <span class="ck-lbl">Carving</span>
+            <span class="ck-val" id="ck-carve-val">—</span>
+            <i class="prof-tip" data-tip="Roll a d20 and add the listed ability modifier. If you have proficiency in the listed skill or tool, also add your Proficiency Bonus.">?</i>
+            <span class="ck-form" id="ck-carve-form"></span>
+          </div>
+        </div>
+        <div class="tool-grid" style="margin-bottom:var(--space-5);align-items:start;">
+          <div>
+            <div style="display:flex;justify-content:space-between;color:var(--muted);margin-bottom:var(--space-3);font-size:.82em;font-weight:bold;text-transform:uppercase;">
+              <span>Checks</span>
+            </div>
+            <div class="roll-box">
+              <div class="roll-row"><label class="roll-lbl">Assessment Roll</label><input type="number" id="roll-assess" placeholder="e.g. 14" class="roll-fld"></div>
+              <div class="roll-row"><label class="roll-lbl">Carving Roll</label><input type="number" id="roll-carve" placeholder="e.g. 18" class="roll-fld"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;color:var(--muted);margin-bottom:var(--space-3);font-size:.82em;font-weight:bold;text-transform:uppercase;">
+              <span>Helpers</span><span id="helper-max" style="color:var(--muted);text-transform:none;">0 Max</span>
+            </div>
+            <div class="roll-box" style="min-height:100px;"><div id="helpers-wrap"></div></div>
+          </div>
+        </div>
+        <button class="btn-primary" style="background:var(--gold);color:#111;margin:0;" onclick="promptHarvest()">Harvest Creature</button>
+      </div>
+    </div>
+
+    <!-- Results view -->
+    <div id="v-results" style="display:none;">
+      <div class="tool-grid">
+        <div class="hpanel" style="border-color:var(--gold);">
+          <h2 class="hpanel-title" style="color:var(--gold);">Harvest Outcome</h2>
+          <div id="styled-out"></div>
+        </div>
+        <div class="hpanel" style="border-color:var(--green);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px dashed rgba(46,204,113,.3);">
+            <h2 class="hpanel-title" style="color:var(--green);margin:0;padding:0;border:none;">Parts for your Inventory</h2>
+            <button class="nav-btn" style="color:var(--green);border-color:var(--green);font-size:.75em;padding:3px 10px;" onclick="copyOut()">Copy &#128203;</button>
+          </div>
+          <div class="raw-export" id="raw-export" contenteditable="true" spellcheck="false"></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /t-field -->
+
+  <!-- WORKSHOP -->
+  <div id="t-workshop" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-5);">
+      <p style="color:var(--muted);font-style:italic;margin:0;font-size:.9em;max-width:70%;">Use information lodged via Spectacular Analytica to reverse-engineer blueprints. Failure places the blueprint on a 2-hour cooldown.</p>
+      <button class="nav-btn" style="color:var(--red);border-color:var(--red);" onclick="clearFormula()">Clear Formula</button>
+    </div>
+    <div class="ws-roster">
+      <div class="ws-ctrl">
+        <input type="text" id="ws-search" placeholder="Search blueprints..." onkeyup="renderWS()" style="flex:1;padding:8px 12px;font-size:.88em;">
+        <div class="filter-tog">
+          <button class="fil-btn active" onclick="setWsF('progress',this)">In Progress</button>
+          <button class="fil-btn" onclick="setWsF('all',this)">All</button>
+          <button class="fil-btn" onclick="setWsF('avail',this)">Available</button>
+          <button class="fil-btn" onclick="setWsF('cd',this)">On Cooldown</button>
+        </div>
+      </div>
+      <div class="ws-grid-wrap">
+        <div class="ws-grid" id="ws-list"></div>
+        <div class="ws-pager" id="ws-pager" style="display:none;">
+          <button class="ws-page-btn" id="ws-prev" onclick="wsChangePage(-1)">&#8592; Prev</button>
+          <span class="ws-page-info" id="ws-page-info"></span>
+          <button class="ws-page-btn" id="ws-next" onclick="wsChangePage(1)">Next &#8594;</button>
+        </div>
+      </div>
+    </div>
+    <div class="ws-work" id="ws-work">
+      <div class="ws-pools">
+        <div class="ws-box" style="border-color:var(--border);">
+          <div class="ws-box-ttl" style="color:var(--muted);">Creature Type</div>
+          <div id="pool-types"></div>
+        </div>
+        <div class="ws-box" style="border-color:var(--green);">
+          <div class="ws-box-ttl" style="color:var(--green);">Component</div>
+          <div id="pool-comps"></div>
+        </div>
+      </div>
+      <div class="ws-right-col">
+        <div class="formula-wrap">
+          <div class="formula-bar">
+            <div class="formula-ttl">Formulate Blueprint</div>
+            <div id="fs-target"  class="fslot">Select Target Blueprint</div>
+            <div class="math-sym" id="ms-eq">=<span class="sym-ring"></span></div>
+            <div id="fs-type"    class="fslot">Select Taxonomy</div>
+            <div class="math-sym" id="ms-plus1">+<span class="sym-ring"></span></div>
+            <div id="fs-comp"    class="fslot">Select Component</div>
+            <div class="math-sym" id="ms-plus2">+<span class="sym-ring"></span></div>
+            <div class="ess-wrap">
+              <button class="ess-sel-btn" id="ess-sel-btn" onclick="toggleEssDrop(event)">— Select Essence Tier —</button>
+              <div class="ess-dropdown" id="ess-dropdown"></div>
+            </div>
+            <div class="formula-foot">
+              <button class="btn-primary" onclick="trySynth()" style="margin:0;">Synthesize Blueprint</button>
+            </div>
+            <div class="att-hist" id="att-hist">
+              <div class="att-hist-ttl">Previous Attempts</div>
+              <div id="att-rows"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /t-workshop -->
+
+  <!-- RECIPE BOOK -->
+  <div id="t-recipes" class="tab-content">
+    <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);">
+      <input type="text" id="rb-search" placeholder="Search known recipes..." onkeyup="renderRB()" style="flex:2;">
+      <select id="rb-filter" onchange="renderRB()" style="flex:1;">
+        <option value="All">All Categories</option><option value="Favorited">Favorited</option>
+        <option value="Weapon">Weapons</option><option value="Armor">Armor</option>
+        <option value="Wondrous">Wondrous Items</option><option value="Ring">Rings</option>
+        <option value="Consumable">Consumables / Potions</option><option value="Cooking">Cooked Food</option>
+      </select>
+    </div>
+    <div class="rb-grid" id="rb-grid"></div>
+  </div>
+
+  <!-- CAULDRON -->
+  <div id="t-cauldron" class="tab-content">
+    <p style="text-align:center;color:var(--muted);font-style:italic;margin-top:0;margin-bottom:var(--space-6);">Experiment with cooked food recipes, or calculate the risks of eating raw monster parts.</p>
+    <div style="display:flex;flex-direction:column;gap:var(--space-8);">
+      <div>
+        <h3 style="color:var(--gold);font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px;margin-top:0;">The Cooking Pot</h3>
+        <div class="cld-layout">
+          <div>
+            <div style="font-size:.72em;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin-bottom:var(--space-2);">All Meals</div>
+            <div class="cld-list" id="cld-list"></div>
+          </div>
+          <div class="cld-ws">
+            <div id="cld-idle" class="cld-idle">Select a meal from the list to begin.</div>
+            <div id="cld-config-wrap" class="cld-config-wrap">
+            <div id="cld-config">
+              <div style="background:var(--depth-inset);padding:var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:var(--space-4);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+                  <label style="color:var(--muted);font-size:.8em;text-transform:uppercase;margin:0;">Essence Tier</label>
+                  <select id="cld-ess" onchange="updateMix()" style="width:55%;padding:8px 10px;font-size:.88em;">
+                    <option value="Uncommon">Frail Essence</option><option value="Rare">Robust Essence</option>
+                    <option value="Very Rare">Potent Essence</option><option value="Legendary">Mythic Essence</option>
+                    <option value="Artifact">Deific Essence</option>
+                  </select>
+                </div>
+                <div style="font-size:.75em;text-transform:uppercase;color:var(--muted);margin-bottom:var(--space-2);">Ingredients</div>
+                <div id="ing-list" style="display:flex;flex-direction:column;gap:var(--space-2);"></div>
+              </div>
+              <div class="cook-ck">
+                <div class="cook-ck-lbl">Cooking Check</div>
+                <div class="cook-ck-val">Constitution (Cook's Utensils)</div>
+                <div class="cook-ck-form">CON roll [+ PB if proficient in Cook's Utensils]<i class="prof-tip" style="margin-left:4px;" data-tip="Roll a d20 and add your Constitution modifier. If you have proficiency with Cook's Utensils, also add your Proficiency Bonus.">?</i></div>
+              </div>
+              <div class="roll-box">
+                <div class="roll-row">
+                  <label class="roll-lbl">Your Roll</label>
+                  <input type="number" id="cook-roll" placeholder="Enter total" class="roll-fld" style="width:110px;">
+                </div>
+                <div class="roll-row" style="align-items:center;">
+                  <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:.88em;color:var(--green);font-weight:bold;text-transform:uppercase;letter-spacing:.5px;">
+                    <input type="checkbox" id="hlp-chk" onchange="toggleCookHelper()" style="appearance:none;-webkit-appearance:none;width:18px;height:18px;background:var(--depth-inset);border:2px solid var(--border);border-radius:50%;cursor:pointer;transition:background .2s,border-color .2s,box-shadow .2s;flex-shrink:0;">
+                    Have a Helper?
+                  </label>
+                  <div id="hlp-inputs" style="display:none;gap:var(--space-2);align-items:center;">
+                    <input type="number" id="hlp-pb" placeholder="Helper PB" style="width:80px;padding:6px 8px;font-size:.85em;">
+                    <select id="hlp-prof" style="padding:6px 8px;font-size:.85em;">
+                      <option value="full">Proficient (+Full PB)</option><option value="half">Not Proficient (+Half PB)</option>
+                    </select>
+                  </div>
+                </div>
+                <button class="btn-primary" style="background:var(--green);margin:0;" onclick="execCook()">Cook Meal</button>
+                <div id="cook-out" style="display:none;padding:var(--space-4);border-radius:var(--radius-sm);margin-top:var(--space-2);line-height:1.6;"></div>
+              </div>
+            </div>
+            </div><!-- /cld-config-wrap -->
+            <div id="mix-area" class="meal-bufs"><div style="text-align:center;color:var(--muted);font-style:italic;">Meal effects will appear here.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="raw-panel">
+        <h3 class="raw-ttl">The Raw Diet</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4);">
+          <select id="raw-type" style="margin:0;"><option value="" disabled selected>Creature Type...</option>
+            <option>Aberration</option><option>Beast</option><option>Celestial</option><option>Construct</option>
+            <option>Dragon</option><option>Elemental</option><option>Fey</option><option>Fiend</option>
+            <option>Giant</option><option>Humanoid</option><option>Monstrosity</option><option>Ooze</option>
+            <option>Plant</option><option>Undead</option>
+          </select>
+          <select id="raw-comp" style="margin:0;"><option value="" disabled selected>Edible Part...</option>
+            <option>Blood</option><option>Bone</option><option>Brain</option><option>Egg</option><option>Eye</option>
+            <option>Fat</option><option>Flesh</option><option>Heart</option><option>Liver</option><option>Spice</option>
+          </select>
+          <input type="number" id="raw-con" placeholder="Your CON Modifier" style="margin:0;">
+          <input type="number" id="raw-roll" placeholder="Total Save Result"  style="margin:0;">
+        </div>
+        <div class="raw-crit">
+          <label class="raw-crit-lbl"><input type="radio" name="rcrit" value="none" checked><span>Normal Roll</span></label>
+          <label class="raw-crit-lbl"><input type="radio" name="rcrit" value="nat20"><span style="color:var(--gold);">Natural 20</span></label>
+          <label class="raw-crit-lbl"><input type="radio" name="rcrit" value="nat1"><span style="color:var(--red);">Natural 1</span></label>
+        </div>
+        <button class="btn-primary" style="background:var(--red);margin-bottom:var(--space-4);" onclick="calcRaw()">Consume Raw Part</button>
+        <div id="raw-out" style="display:none;background:var(--depth-deep);padding:var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.6;"></div>
+      </div>
+    </div>
+  </div><!-- /t-cauldron -->
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SOCKETING
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="t-socketing" class="tab-content">
+
+    <!-- Quick rules -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); margin-bottom:var(--space-6);">
+      <div style="background:var(--depth-inset); border:1px solid var(--border); border-radius:var(--radius-sm); padding:var(--space-4);">
+        <h3 style="font-size:.82em; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 var(--space-3) 0; padding-bottom:var(--space-2); border-bottom:1px solid var(--border-subtle);">Attaching</h3>
+        <div style="font-size:.9em; color:var(--text); line-height:1.6;">
+          Takes <strong style="color:var(--green);">1 hour</strong> with proficiency in an appropriate tool (Carpenter's, Cobbler's, Glassblower's, Leatherworker's, Smith's, Tinker's, Weaver's, or Woodcarver's).
+          Items of <strong style="color:var(--green);">Common rarity or higher</strong> have one socket.
+        </div>
+      </div>
+      <div style="background:var(--depth-inset); border:1px solid var(--border); border-radius:var(--radius-sm); padding:var(--space-4);">
+        <h3 style="font-size:.82em; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 var(--space-3) 0; padding-bottom:var(--space-2); border-bottom:1px solid var(--border-subtle);">Removal</h3>
+        <div style="font-size:.9em; color:var(--text); line-height:1.6;">
+          <strong style="color:var(--gold);">DC 10</strong> Dexterity or Intelligence check <span class="prof-tip" data-tip="Use any of the listed tool proficiencies. The check is Dex or Int (your choice) + proficiency bonus if proficient.">?</span> using the same tool proficiency.
+          On a failure, the socketable is <strong style="color:var(--red);">destroyed</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Socketable browser -->
+    <div style="background:var(--depth-base); padding:var(--space-5); border:1px solid var(--border); border-radius:var(--radius-lg); margin-bottom:var(--space-6);">
+      <label style="margin-bottom:var(--space-3); display:block;">Browse Socketable Items</label>
+      <input type="text" id="sk-search" placeholder="Search by name…" oninput="skSearch()" autocomplete="off" style="margin-bottom:var(--space-3);">
+
+      <div id="sk-list" style="display:grid; gap:var(--space-2); max-height:320px; overflow-y:auto;"></div>
+
+      <!-- Selected detail -->
+      <div id="sk-detail" style="display:none; background:var(--depth-deep); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:var(--space-4) var(--space-5); margin-top:var(--space-4);">
+        <div id="sk-d-name" style="font-size:1.05em; font-weight:bold; color:var(--gold); margin-bottom:var(--space-2);"></div>
+        <div id="sk-d-tags" style="display:flex; gap:var(--space-2); flex-wrap:wrap; margin-bottom:var(--space-3);"></div>
+        <div id="sk-d-att" style="font-size:.85em; color:var(--muted); margin-bottom:var(--space-3); display:none;"></div>
+        <div id="sk-d-stats" style="font-size:.88em; color:var(--text); line-height:1.6;"></div>
+      </div>
+    </div>
+
+    <!-- Removal resolver -->
+    <div style="background:var(--depth-base); padding:var(--space-5); border:1px solid var(--border); border-radius:var(--radius-lg);">
+      <h2 style="margin-top:0; font-size:1em;">Resolve Removal</h2>
+      <p style="font-size:.88em; color:var(--muted); margin-bottom:var(--space-4);">
+        Make a <strong style="color:var(--text);">Dexterity or Intelligence</strong> check using one of the listed tool proficiencies. Enter the total result below.
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); align-items:flex-end;">
+        <div>
+          <label>Your Roll (d20 + ability mod + prof)</label>
+          <input type="number" id="sk-roll" placeholder="e.g. 12" min="1" max="40">
+        </div>
+        <div>
+          <button class="btn-primary" style="width:100%; margin:0;" onclick="skResolve()">Resolve Removal</button>
+        </div>
+      </div>
+      <div id="sk-result" style="display:none; margin-top:var(--space-4); padding:var(--space-4); border-radius:var(--radius-sm); border:1px solid; font-size:.9em; line-height:1.6;"></div>
+    </div>
+
+  </div><!-- /t-socketing -->
+
+</div><!-- /container -->
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const starterRecipes = ["+1 Weapon (Sentinel Weapon)","Amulet of the Devout +1","Boots of Striding and Springing","Bracers of Defense","Goggles of Night","Immovable Rod","Rod of the Pact Keeper +1","Sentinel Shield","Shadowfell Brand Tattoo","Wraps of Unarmed Prowess +1"];
+const helperLim = {Tiny:0,Small:1,Medium:2,Large:4,Huge:6,Gargantuan:8};
+const timeMap   = {Tiny:"10 mins (1 Moment)",Small:"10 mins (1 Moment)",Medium:"10 mins (1 Moment)",Large:"30 mins (3 Moments)",Huge:"2 hrs (12 Moments)",Gargantuan:"12 hrs (72 Moments)"};
+const essLevels = [{name:"No Essence Needed",r:0},{name:"Frail Essence",r:1},{name:"Robust Essence",r:2},{name:"Potent Essence",r:3},{name:"Mythic Essence",r:4},{name:"Deific Essence",r:5}];
+const rarMap    = {Common:0,Uncommon:1,Rare:2,"Very Rare":3,Legendary:4,Artifact:5};
+const coreTypes = ["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"];
+const ckSkill   = {Aberration:"Arcana",Beast:"Survival",Celestial:"Religion",Construct:"Investigation",Dragon:"Survival",Elemental:"Arcana",Fey:"Arcana",Fiend:"Religion",Giant:"Medicine",Humanoid:"Medicine",Monstrosity:"Survival",Ooze:"Nature",Plant:"Nature",Undead:"Medicine"};
+const ritTypes  = ["Aberration","Celestial","Elemental","Fey","Fiend"];
+const compTypeMap = {
+    Blood:["Aberration","Beast","Celestial","Construct","Dragon","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"],
+    Bone:["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Plant","Undead"],
+    Brain:["Aberration","Celestial","Construct","Fey","Fiend","Humanoid"],
+    Egg:["Aberration","Beast","Dragon","Fey","Humanoid","Monstrosity"],
+    Eye:["Aberration","Beast","Celestial","Dragon","Elemental","Fey","Fiend","Monstrosity","Undead"],
+    Fat:["Aberration","Beast","Celestial","Construct","Dragon","Fey","Fiend","Giant","Monstrosity","Ooze","Plant","Undead"],
+    Flesh:["Aberration","Beast","Celestial","Construct","Dragon","Fey","Fiend","Giant","Monstrosity","Plant","Undead"],
+    Heart:["Aberration","Beast","Celestial","Construct","Dragon","Fey","Fiend","Giant","Humanoid","Monstrosity","Plant","Undead"],
+    Liver:["Aberration","Beast","Celestial","Construct","Dragon","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant"],
+    Spice:["Celestial","Elemental","Fey","Fiend","Plant","Undead"]
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let wsd     = JSON.parse(localStorage.getItem('wsData'))         || {items:[],components:[],types:[],maxRarity:0};
+let learned = JSON.parse(localStorage.getItem('learnedRecipes')) || [];
+let pinned  = JSON.parse(localStorage.getItem('pinnedRecipes'))  || [];
+let attHist = JSON.parse(localStorage.getItem('attemptHistory')) || {};
+let pool=[], queue=[], targets=[], avail=[], hqDragState=null;
+let wsTarget=null, wsType=null, wsComp=null, wsFilter='progress', wsPage=0, cldRecipe=null;
+
+// ── Data integration ───────────────────────────────────────────────────────
+if (typeof recipeData!=='undefined'&&typeof itemData!=='undefined') Object.assign(recipeData,itemData);
+if (typeof bestiaryData!=='undefined') {
+    bestiaryData.forEach(m=>{
+        if (!m?.metadata||!m?.harvest_and_loot) return;
+        if (!m.harvest_and_loot.parts?.length&&!m.harvest_and_loot.guaranteed_drops?.length) return;
+        let bt="Monstrosity";
+        for (let t of coreTypes) if ((m.metadata.type||"").toLowerCase().includes(t.toLowerCase())){bt=t;break;}
+        if (!creatureData[bt]) creatureData[bt]={parts:[],modifiers:{}};
+        if (!creatureData[bt].modifiers) creatureData[bt].modifiers={};
+        creatureData[bt].modifiers[m.name]={parts:m.harvest_and_loot.parts||[]};
+    });
+}
+// Cooking recipes are loaded directly from recipeData in the Cauldron — no localStorage needed
+
+// ── Sort: symbols → numbers → alpha ───────────────────────────────────────
+const nsort=(a,b)=>{const r=s=>/^[+\-#*]/.test(s)?0:/^\d/.test(s)?1:2;let ra=r(a),rb=r(b);return ra!==rb?ra-rb:a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});};
+
+// ── Ingredient buff/flavour helpers — data lives in database.js (ingredientData) ─
+function getIngredientBuff(part, type) {
+    const d = ingredientData?.[part];
+    if (!d) return null;
+    if (d._universal) return d.buff ? d.buff.replace(/\[T\]/g, type) : null;
+    return d[type]?.buff || null;
+}
+function getIngredientFlavour(part, type) {
+    const d = ingredientData?.[part];
+    if (!d) return null;
+    if (d._universal) return d.flavour?.[type] || d.flavour?.Any || null;
+    return d[type]?.flavour || null;
+}
+
+const cookFlaws=[
+    "<strong>Rottworth's Revenge:</strong> Poisoned, can't benefit from rests.",
+    "<strong>Nauseating Nightmare:</strong> Disadvantage on INT/WIS/CHA checks and initiative.",
+    "<strong>Tongue Tied:</strong> Can only speak a language associated with the monster's type.",
+    "<strong>Flatulence:</strong> Disadvantage on CHA checks (within 30ft) and Stealth.",
+    "<strong>Borborygmus Bomb:</strong> Disadvantage on concentration; after 1d8 hrs, release cloudkill centred on yourself.",
+    "<strong>High Glycemic Index:</strong> After 1d4 hrs, disadvantage on DEX checks and saves.",
+    "<strong>Allergic Reaction:</strong> DC 10 CON save each turn to avoid losing an action.",
+    "<strong>Food Baby:</strong> Speed reduced by 5 feet."
+];
+const cookBoons=[
+    "<strong>Iron Gut:</strong> Resistance to poison; advantage vs. being poisoned.",
+    "<strong>Sweet Breath:</strong> Advantage on CHA checks vs. creatures within 30 ft. that can smell.",
+    "<strong>Linguistic Learning:</strong> Speak one language associated with the monster's type.",
+    "<strong>Slow Release Energy:</strong> Advantage on concentration saves.",
+    "<strong>Fearless Fancy:</strong> Immune to the frightened condition.",
+    "<strong>Hearty Harvest:</strong> Advantage on STR checks; one size larger for carry capacity.",
+    "<strong>Peaceful Digestion:</strong> +1 HP per HD on short rests; recover extra HD equal to PB on long rests.",
+    "<strong>Fast Food:</strong> Speed increases by 5 feet."
+];
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.onload=()=>{
+    const s=document.getElementById('type-sel');
+    Object.keys(creatureData).sort().forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);
+    renderWS(); renderRB();
+};
+
+function switchTab(id,btn){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    if(id==='t-workshop') renderWS();
+    if(id==='t-recipes')  renderRB();
+    if(id==='t-cauldron') renderCauldron();
+}
+
+// ── Field tools ────────────────────────────────────────────────────────────
+function loadModifiers(){
+    const type=document.getElementById('type-sel').value;
+    const mods=creatureData[type]?.modifiers||{};
+    const wrap=document.getElementById('mod-wrap'), pills=document.getElementById('mod-pills');
+    pills.innerHTML='';
+    if(Object.keys(mods).length){
+        Object.keys(mods).sort().forEach(m=>pills.innerHTML+=`<button class="pill-btn" data-mod="${m}" onclick="this.classList.toggle('active');primeScanners()">${m}</button>`);
+        wrap.style.display='block';
+    } else wrap.style.display='none';
+    primeScanners();
+}
+
+function primeScanners(){
+    ['v-harvest','v-results'].forEach(i=>document.getElementById(i).style.display='none');
+    document.getElementById('v-scan').style.display='block';
+    document.getElementById('btn-cancel').style.display='none';
+    document.getElementById('btn-new').style.display='none';
+    document.getElementById('ready-mod').style.display='none';
+    document.getElementById('chk-assess').checked=false;
+    document.getElementById('chk-carve').checked=false;
+    dualFill(); queue=[]; pool=[];
+    const type=document.getElementById('type-sel').value; if(!type)return;
+    const size=document.getElementById('size-sel').value;
+    document.getElementById('p-time').innerText=timeMap[size];
+    document.getElementById('p-helpers').innerText=helperLim[size]+' Max';
+    targets=[type]; avail=[...(creatureData[type].parts||[])];
+    document.querySelectorAll('#mod-pills .pill-btn.active').forEach(b=>{
+        let m=b.getAttribute('data-mod'); targets.push(m);
+        if(creatureData[type].modifiers?.[m]?.parts) avail.push(...creatureData[type].modifiers[m].parts);
+    });
+    const ess=document.getElementById('ess-sel').value; if(ess) targets.push(ess);
+    document.getElementById('card-book').className='tool-card ready-green';
+    document.getElementById('card-quad').className='tool-card ready-purple';
+    document.getElementById('mask-book').innerText='Begin Anatomical Scan';
+    document.getElementById('mask-quad').innerText='Begin Magical Analysis';
+    document.getElementById('book-res').innerHTML='';
+    document.getElementById('quad-res').innerHTML='';
+    document.getElementById('warn-banner').style.display='none';
+}
+
+function dualFill(){
+    let a=document.getElementById('chk-assess').checked, c=document.getElementById('chk-carve').checked;
+    document.getElementById('fl').classList.toggle('on',a);
+    document.getElementById('fr').classList.toggle('on',c);
+    let btn=document.getElementById('btn-init');
+    btn.classList.toggle('ready',a&&c); btn.disabled=!(a&&c);
+}
+
+function execBook(){
+    const card=document.getElementById('card-book'); if(!card.classList.contains('ready-green'))return;
+    const type=document.getElementById('type-sel').value, size=document.getElementById('size-sel').value;
+    const dest=document.getElementById('chk-dest').checked, over=document.getElementById('chk-over').checked;
+    const sRng={Tiny:[2,3],Small:[3,4],Medium:[4,5],Large:[5,7],Huge:[7,9],Gargantuan:[9,12]};
+    let [mn,mx]=sRng[size], cnt=Math.floor(Math.random()*(mx-mn+1))+mn;
+    if(over) cnt=Math.max(1,Math.ceil(cnt/2));
+    let res=[...avail].sort(()=>0.5-Math.random()).slice(0,Math.min(cnt,avail.length));
+    const ess=document.getElementById('ess-sel').value;
+    if(ess&&(!over||Math.random()>=0.5)){
+        const eDC={Frail:25,Robust:30,Potent:35,Mythic:40,Deific:50}[ess.split(' ')[0]]||25;
+        res.splice(Math.floor(Math.random()*(res.length+1)),0,{name:ess,dc:eDC,tags:['Essence']});
+    }
+    let mods=[]; document.querySelectorAll('#mod-pills .pill-btn.active').forEach(b=>mods.push(b.getAttribute('data-mod')));
+    pool=[]; let hasRuin=false, ruinIdx=(dest&&res.length)?Math.floor(Math.random()*res.length):-1;
+    const sWt={Tiny:"0.5 lb",Small:"1 lb",Medium:"1 lb",Large:"2 lb",Huge:"4 lb",Gargantuan:"8 lb"};
+    const fY={Tiny:[1,1],Small:[1,2],Medium:[2,5],Large:[5,15],Huge:[15,25],Gargantuan:[25,50]};
+
+    let html=`<table class="htbl"><thead><tr>
+        <th style="color:var(--green);width:50%;">Component</th>
+        <th style="color:var(--green);width:12%;">DC</th>
+        <th style="color:var(--green);">Tags</th>
+    </tr></thead><tbody>`;
+
+    res.forEach((p,i)=>{
+        let tags=p.tags||[], isRuin=dest&&(i===ruinIdx||Math.random()<0.33);
+        if(isRuin)hasRuin=true;
+        let isFluid=tags.includes('Fluid'), yAmt=1, isJuicy=false;
+        if(isFluid){let[fmn,fmx]=fY[size];isJuicy=Math.random()<0.10;yAmt=isJuicy?fmx*2:Math.floor(Math.random()*(fmx-fmn+1))+fmn;}
+        pool.push({id:Math.random().toString(36).substr(2,9),name:p.name,dc:p.dc,tags,ruined:isRuin,rupture:p.ruptureType||null,yield:yAmt,juicy:isJuicy,wt:isFluid?"0.5 lb":tags.includes('Essence')?"0.1 lb":sWt[size],type,mods:[...mods]});
+        let dn=(isJuicy?`<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> `:'')+p.name+(isFluid?` (x${yAmt})`:'')+(isRuin?`<br><span class="ruined">[ Ruined ]</span>`:'');
+        let dt=[...tags].map(t=>t==='Volatile'&&p.ruptureType?`<span style="color:var(--red);" title="${p.ruptureType}">Volatile</span>`:t);
+        if(isRuin){dt.push(`<span style="color:var(--red);">*Disadv.*</span>`);}
+        html+=`<tr><td style="color:var(--gold);font-weight:bold;">${dn}</td><td>${p.dc}</td><td style="font-size:.8em;color:var(--muted);">${dt.join(', ')||'—'}</td></tr>`;
+    });
+    html+=`</tbody></table>`;
+    document.getElementById('book-res').innerHTML=html;
+    document.getElementById('warn-banner').style.display=hasRuin?'block':'none';
+    card.className='tool-card scanned';
+    document.getElementById('ready-mod').style.display='flex';
+}
+
+function generateFlavorText(name, rarity, usedSet) {
+    let n=name.toLowerCase(), r=(rarity||'Magic').toLowerCase(), adj=r.includes('legendary')?'mythic':r.includes('rare')?'fancy':'reliable';
+    const specifics=[
+        {key:'resistance',val:`Harder to kill when facing very specific elemental threats.`},
+        {key:'dragon',val:`Forged from the remains of a ${adj} dead reptile.`},
+        {key:'cloak',val:`A ${adj} garment for brooding in tavern corners.`},
+        {key:'ring',val:`A ${adj} circle of metal for your finger.`},
+        {key:'potion',val:`A ${adj} and questionable beverage. Bottoms up!`},
+        {key:'weapon',val:`A ${adj} implement for aggressive negotiations.`},
+        {key:'armor',val:`A ${adj} set of protection for the well-dressed combatant.`},
+        {key:'meal',val:`Questionable ingredients, suspicious smell, delicious results.`},
+        {key:'wand',val:`A ${adj} stick for pointing at things magically.`},
+        {key:'staff',val:`A ${adj} walking stick with delusions of grandeur.`},
+    ];
+    for(let s of specifics){if(n.includes(s.key)&&!usedSet.has(s.val))return s.val;}
+    const fallbacks={legendary:['An item of mythic, terrifying power.','Priceless, dangerous, and incredibly shiny.'],veryrare:['An exceedingly rare antiquity.','A masterwork of arcane artifice.'],rare:['A highly valuable curiosity.','A potent magical tool. Handle with care.'],uncommon:['A handy piece of magical utility.','Standard issue for adventurers who survive.'],novice:['A modest meal with surprising benefits.','Simple ingredients, decent results.'],journeyman:['A satisfying meal with notable benefits.','The cook clearly knew what they were doing.']};
+    let pool=fallbacks[r.replace(' ','')]||['A curious magical curio of unknown provenance.']; let available=pool.filter(f=>!usedSet.has(f));
+    return(available.length?available:pool)[Math.floor(Math.random()*(available.length||pool.length))];
+}
+
+function execQuad(){
+    const card=document.getElementById('card-quad'); if(!card.classList.contains('ready-purple'))return;
+    let crafts=[];
+    for(let n in recipeData){let r=recipeData[n];if(r.category==='Cooking')continue;if(r.components?.some(c=>targets.some(t=>c.toLowerCase().includes(t.toLowerCase()))))crafts.push(n);}
+    let list=crafts.sort(()=>0.5-Math.random()).slice(0,2), hIdx=Math.floor(Math.random()*list.length), cleanHint='', tolodge=[], usedFlavors=new Set();
+    let html=list.map((c,i)=>{
+        let r=recipeData[c], hint='';
+        if(i===hIdx&&r.components?.length){
+            let f=r.components.filter(x=>!x.toLowerCase().includes('essence')&&!x.toLowerCase().includes('mundane')&&!x.toLowerCase().includes('spice'));
+            cleanHint=(f.length?f[0]:r.components[0]).replace(/^\d+x\s/i,'').replace(/\s*\([^)]*\)/g,'').trim();
+            hint=cleanHint;
+        }
+        let flavor=generateFlavorText(c,r.rarity,usedFlavors); usedFlavors.add(flavor);
+        tolodge.push({name:c.replace(/'/g,"\\'"),rarity:r.rarity});
+        return`<div style="padding:12px 0;border-bottom:1px solid var(--border-subtle);">
+            <span class="q-item tooltip-trigger" data-flavor="${flavor.replace(/"/g,'&quot;')}" data-comp="${hint.replace(/"/g,'&quot;')}" style="color:var(--text);font-weight:bold;cursor:help;">${c}</span>
+            <div style="font-size:.78em;color:var(--muted);text-transform:uppercase;margin-top:3px;">${r.rarity} ${r.type}</div>
+        </div>`;
+    }).join('');
+    let btnHtml='';
+    if(cleanHint&&tolodge.length){
+        let ct=targets[0],ij=JSON.stringify(tolodge).replace(/"/g,'&quot;');
+        btnHtml=`<div style="margin-top:16px;"><button class="nav-btn" id="btn-anal" style="width:100%;border-color:var(--muted);color:var(--muted);font-weight:bold;letter-spacing:1px;justify-content:center;" onclick="lodgeAnal(this,'${ij}','${cleanHint.replace(/'/g,"\\'")}','${ct}')">Spectacular Analytica</button></div>`;
+    }
+    if(!html)html=`<p style="color:var(--red);font-size:.9em;">No blueprints tied to this resonance.</p>`;
+    document.getElementById('quad-res').innerHTML=html;
+    // Button pinned to bottom of card separately
+    let analWrap=document.getElementById('quad-anal-wrap');
+    if(!analWrap){analWrap=document.createElement('div');analWrap.id='quad-anal-wrap';analWrap.style.cssText='margin-top:auto;padding-top:var(--space-4);';document.getElementById('body-quad').appendChild(analWrap);}
+    analWrap.innerHTML=btnHtml;
+    card.className='tool-card scanned';
+}
+
+function initHarvest(){
+    document.getElementById('v-scan').style.display='none';
+    document.getElementById('v-harvest').style.display='block';
+    document.getElementById('btn-cancel').style.display='inline-block';
+    const type=document.getElementById('type-sel').value, skill=ckSkill[type]||'Survival', isRit=ritTypes.includes(type);
+    document.getElementById('ck-assess-val').innerText='INT roll';
+    document.getElementById('ck-assess-form').innerText=`[+ PB if proficient in ${skill}]`;
+    document.getElementById('ck-carve-val').innerText=isRit?'DEX or Spell roll':'DEX roll';
+    document.getElementById('ck-carve-form').innerText=`[+ PB if proficient in ${skill}]`;
+    const size=document.getElementById('size-sel').value, maxH=helperLim[size];
+    document.getElementById('helper-max').innerText=`${maxH} Max`;
+    const hw=document.getElementById('helpers-wrap'); hw.innerHTML='';
+    if(!maxH) hw.innerHTML=`<div style="color:var(--muted);font-size:.85em;text-align:center;padding:20px;font-style:italic;">No helpers for this size.</div>`;
+    else for(let i=1;i<=maxH;i++) hw.innerHTML+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="6" min="2"><select id="hpr-${i}" style="flex:1;padding:6px 8px;font-size:.85em;"><option value="half">Not Proficient (+Half PB)</option><option value="full">Proficient (+Full PB)</option></select></div>`;
+    renderHTables();
+}
+
+function renderHTables(){
+    const lb=document.getElementById('hlist-body'), ob=document.getElementById('horder-body');
+    lb.innerHTML=''; ob.innerHTML='';
+    pool.forEach(p=>{
+        if(p.yield<=0)return;
+        let n=`<strong style="color:var(--gold);">${p.name}${p.tags.includes('Fluid')?` (x${p.yield})`:''}</strong>`;
+        if(p.juicy)n=`<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> `+n;
+        if(p.ruined)n+=`<br><span class="ruined">[ Ruined ] *Disadv.*</span>`;
+        let dt=p.tags.map(t=>t==='Volatile'&&p.rupture?`<span style="color:var(--red);" title="${p.rupture}">Volatile</span>`:t);
+        lb.innerHTML+=`<tr><td>${n}</td><td style="color:var(--gold);font-weight:bold;">${p.dc}</td><td style="font-size:.8em;color:var(--muted);">${dt.join(', ')||'—'}</td><td><button class="add-btn" onclick="addQ('${p.id}')">+ Add</button></td></tr>`;
+    });
+    let tdc=0;
+    queue.forEach((p,i)=>{
+        let n=`<span style="color:var(--text);">${p.name}</span>`;
+        if(p.juicy)n=`<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> `+n;
+        if(p.ruined)n+=` <span class="ruined" style="display:inline;">(Ruined)</span>`;
+        tdc+=p.dc;
+        const row=document.createElement('div');
+        row.className='hq-row';
+        row.dataset.index=i;
+        row.innerHTML=`<div class="hq-handle">&#8942;&#8942;</div><div style="font-size:.9em;min-width:0;">${n}</div><div class="hq-meta"><span style="color:var(--gold);font-weight:bold;font-size:.9em;">DC ${p.dc}</span><button class="rm-btn" onclick="rmQ(${i})">×</button></div>`;
+        row.addEventListener('pointerdown', onHQPointerDown);
+        ob.appendChild(row);
+    });
+    document.getElementById('total-dc').innerText=tdc;
+}
+function addQ(id){let p=pool.find(x=>x.id===id);if(p&&p.yield>0){p.yield--;queue.push({...p,yield:1});renderHTables();}}
+function rmQ(i){let r=queue.splice(i,1)[0];let o=pool.find(x=>x.id===r.id);if(o)o.yield++;renderHTables();}
+
+function onHQPointerDown(e){
+    if(e.target.classList.contains('rm-btn'))return;
+    e.preventDefault();
+    const row=e.currentTarget, idx=parseInt(row.dataset.index);
+    const ob=document.getElementById('horder-body');
+    hqDragState={ index:idx, startY:e.clientY, targetIndex:idx, listTop:ob.getBoundingClientRect().top };
+    row.classList.add('is-dragging');
+    row.setPointerCapture(e.pointerId);
+    row.addEventListener('pointermove', onHQPointerMove);
+    row.addEventListener('pointerup',   onHQPointerUp);
+    row.addEventListener('pointercancel', onHQPointerUp);
+}
+function onHQPointerMove(e){
+    if(!hqDragState)return;
+    e.preventDefault();
+    const row=e.currentTarget;
+    row.style.transform=`translateY(${e.clientY-hqDragState.startY}px)`;
+    const ob=document.getElementById('horder-body');
+    const rows=[...ob.querySelectorAll('.hq-row:not(.is-dragging)')];
+    let newTarget=hqDragState.index;
+    rows.forEach(r=>{
+        const mid=r.getBoundingClientRect().top+r.getBoundingClientRect().height/2-hqDragState.listTop;
+        const relY=e.clientY-hqDragState.listTop;
+        let ai=parseInt(r.dataset.index);
+        if(relY>mid) newTarget=ai>=hqDragState.index?ai+1:ai;
+    });
+    newTarget=Math.max(0,Math.min(queue.length-1,newTarget));
+    hqDragState.targetIndex=newTarget;
+    rows.forEach(r=>{
+        r.classList.remove('drop-gap-above','drop-gap-below');
+        let ri=parseInt(r.dataset.index);
+        if(newTarget<=hqDragState.index){ if(ri===newTarget&&ri<hqDragState.index)r.classList.add('drop-gap-above'); }
+        else{ if(ri===newTarget)r.classList.add('drop-gap-below'); }
+    });
+}
+function onHQPointerUp(e){
+    if(!hqDragState)return;
+    const row=e.currentTarget, from=hqDragState.index, to=hqDragState.targetIndex;
+    row.classList.remove('is-dragging');
+    row.style.transform='';
+    document.querySelectorAll('#horder-body .hq-row').forEach(r=>r.classList.remove('drop-gap-above','drop-gap-below'));
+    row.removeEventListener('pointermove',onHQPointerMove);
+    row.removeEventListener('pointerup',onHQPointerUp);
+    row.removeEventListener('pointercancel',onHQPointerUp);
+    hqDragState=null;
+    if(from!==to){ const item=queue.splice(from,1)[0]; queue.splice(to,0,item); renderHTables(); }
+}
+
+function promptHarvest(){
+    if(isNaN(parseInt(document.getElementById('roll-assess').value))||isNaN(parseInt(document.getElementById('roll-carve').value))){alert('Enter both rolls first.');return;}
+    if(!queue.length){alert('Your Harvest Order is empty!');return;}
+    document.getElementById('harvest-modal').style.display='flex';
+}
+
+function getVal(name,dc,tags){
+    if(tags.includes('Essence')){const v={Frail:{b:100,s:50},Robust:{b:500,s:250},Potent:{b:3000,s:1500},Mythic:{b:16000,s:8000},Deific:{b:160000,s:80000}};for(let k in v)if(name.includes(k))return v[k];return{b:100,s:50};}
+    return{b:dc*4,s:Math.floor(dc*2)};
+}
+
+function confirmHarvest(){
+    document.getElementById('harvest-modal').style.display='none';
+    document.getElementById('v-harvest').style.display='none';
+    document.getElementById('btn-cancel').style.display='none';
+    document.getElementById('btn-new').style.display='inline-block';
+    const a=parseInt(document.getElementById('roll-assess').value), c=parseInt(document.getElementById('roll-carve').value);
+    const size=document.getElementById('size-sel').value, maxH=helperLim[size];
+    let hbBreakdown=[], hbTotal=0;
+    for(let i=1;i<=maxH;i++){let pb=document.getElementById(`hpb-${i}`),pr=document.getElementById(`hpr-${i}`);if(pb?.value!==''){let v=parseInt(pb.value)||0,full=pr.value==='full';let contrib=full?v:Math.floor(v/2);hbTotal+=contrib;if(contrib)hbBreakdown.push(`Helper ${i}: +${contrib}`);}}
+    let roll=a+c+hbTotal, tdc=queue.reduce((s,p)=>s+p.dc,0);
+    let rollDetail=`Assessment ${a} + Carving ${c}${hbTotal?` + Helpers ${hbTotal}`:''}`;
+    if(hbBreakdown.length)rollDetail+=` (${hbBreakdown.join(', ')})`;
+    let out=`<div style="margin-bottom:20px;">
+        <div style="font-size:.72em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">${document.getElementById('type-sel').value} — ${size}</div>
+        <div style="display:flex;gap:40px;align-items:baseline;margin-bottom:6px;">
+            <div><div style="font-size:.72em;color:var(--muted);text-transform:uppercase;">Target DC</div><div style="font-size:2em;color:var(--red);font-weight:bold;font-family:var(--font-display);">${tdc}</div></div>
+            <div><div style="font-size:.72em;color:var(--muted);text-transform:uppercase;">Power</div><div style="font-size:2em;color:var(--gold);font-weight:bold;font-family:var(--font-display);">${roll}</div></div>
+        </div>
+        <div style="color:var(--muted);font-size:.75em;line-height:1.6;">${rollDetail}</div>
+        </div>`;
+    let raw=[], halted=false, ruptHTML='';
+    queue.forEach(p=>{
+        let v=getVal(p.name,p.dc,p.tags);
+        let dn=(p.juicy?`<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> `:'')+p.name+(p.ruined?` <span class="ruined" style="display:inline;">(Ruined)</span>`:'');
+        let rn=(p.juicy?'[Juicy!] ':'')+p.name+(p.ruined?' (Ruined)':'');
+        if(!halted&&roll>=p.dc){
+            let parts=[rn,p.type]; let meta=[];
+            if(p.tags.includes('Essence'))meta.push('Essence'); meta.push(...p.mods);
+            if(meta.length)parts.push(meta.join(', '));
+            if(p.tags.includes('Edible'))parts.push('Edible');
+            parts.push(p.wt,`${v.b} gp`); raw.push(parts.join(' | '));
+            out+=`<div class="out-item"><div class="out-st out-ok">[ ✓ Success ]</div><div class="out-dt"><div>${dn} <span style="color:var(--muted);font-size:.85em;">(DC ${p.dc} | Est. ${v.s} gp)</span></div></div></div>`;
+            roll-=p.dc;
+        } else {
+            halted=true;
+            if(p.rupture&&p.tags.includes('Volatile')) ruptHTML=`<div class="rupture"><div class="rupture-head">⚠ You ruptured the ${p.name}!</div><div class="rupture-body">${p.rupture}</div><div class="rupture-dm">◆ Tell your DM immediately — something terrible has happened!</div></div>`;
+            out+=`<div class="out-item" style="border-left:3px solid var(--red);padding-left:12px;"><div class="out-st out-no">[ ✕ Failed ]</div><div class="out-dt"><div>${dn} <span style="color:var(--muted);font-size:.85em;">(DC ${p.dc})</span></div>${p.rupture&&p.tags.includes('Volatile')?`<div style="color:var(--red);font-size:.85em;font-weight:bold;">⚠ Volatile rupture — see below</div>`:''}</div></div>`;
+        }
+    });
+    document.getElementById('styled-out').innerHTML=out+ruptHTML;
+    document.getElementById('raw-export').innerText=raw.length?raw.join('\n'):'No parts successfully harvested.';
+    document.getElementById('v-results').style.display='block';
+}
+function copyOut(){navigator.clipboard.writeText(document.getElementById('raw-export').innerText).then(()=>alert('Harvest list copied!'));}
+
+// ── Workshop ───────────────────────────────────────────────────────────────
+function lodgeAnal(btn,ij,hint,ct){
+    let items=JSON.parse(ij.replace(/&quot;/g,'"')); let upd=false;
+    items.forEach(o=>{
+        let rd=recipeData[o.name];
+        if(rd?.category==='Cooking') return; // cooking meals are in the Cauldron directly
+        if(!learned.includes(o.name)){
+            if(!wsd.items.find(i=>i.name===o.name)){wsd.items.push({name:o.name,cooldown:0});upd=true;}
+            let rv=rarMap[o.rarity]||0; if(rv>wsd.maxRarity){wsd.maxRarity=rv;upd=true;}
+        }
+    });
+    if(hint&&!wsd.components.includes(hint)){wsd.components.push(hint);upd=true;}
+    if(ct&&!wsd.types.includes(ct)){wsd.types.push(ct);upd=true;}
+    if(upd)localStorage.setItem('wsData',JSON.stringify(wsd));
+    // Suppress quad tooltips — knowledge existed in the moment, now gone
+    document.querySelectorAll('.q-item').forEach(e=>{e.removeAttribute('data-comp');});
+    btn.disabled=true; btn.style.opacity='.35'; btn.style.cursor='not-allowed'; btn.onclick=null;
+}
+
+function setWsF(f,btn){wsFilter=f;wsPage=0;document.querySelectorAll('.fil-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderWS();}
+function wsChangePage(dir){wsPage+=dir;renderWS();}
+function clearFormula(){
+    wsTarget=null;wsType=null;wsComp=null;
+    let eb0=document.getElementById('ess-sel-btn'); if(eb0){eb0.removeAttribute('data-val');}
+    // Reset fslots immediately
+    ['fs-target','fs-type','fs-comp'].forEach(id=>{
+        let el=document.getElementById(id); if(!el)return;
+        el.className='fslot';
+        el.innerText=id==='fs-target'?'Select Target Blueprint':id==='fs-type'?'Select Taxonomy':'Select Component';
+    });
+    let eb=document.getElementById('ess-sel-btn');
+    if(eb){eb.className='ess-sel-btn';eb.innerText='— Select Essence Tier —';}
+    updateFormUI();
+    setTimeout(()=>{
+        document.getElementById('ess-dropdown')?.classList.remove('open');
+        renderWS();
+    },250);
+}
+
+setInterval(()=>{
+    let now=Date.now(),nr=false;
+    document.querySelectorAll('.cd-tmr').forEach(el=>{let cd=parseInt(el.getAttribute('data-cd'));if(cd>now){let d=Math.floor((cd-now)/1000);el.innerText=`${Math.floor(d/60).toString().padStart(2,'0')}:${(d%60).toString().padStart(2,'0')}`;}else nr=true;});
+    if(nr)renderWS();
+},1000);
+
+function wsKnown(name){
+    let hist=attHist[name]||[]; let t=null,c=null,e=null;
+    hist.forEach(a=>{if(a.tc&&!t)t=a.type;if(a.cc&&!c)c=a.comp;if(a.ec&&!e)e=a.ess;});
+    return{type:t,comp:c,ess:e};
+}
+function wsHasProgress(item,now){
+    let hist=attHist[item.name]||[];
+    if(!hist.length)return false;
+    if(item.cooldown>now){let k=wsKnown(item.name);return !!(k.type||k.comp||k.ess);}
+    return true;
+}
+function renderWsCard(i, now, animPill){
+    // animPill = 'type'|'comp'|'ess'|null — which pill to animate on this render
+    let onCd=i.cooldown>now, sel=wsTarget===i.name;
+    let ah=attHist[i.name]||[], k=wsKnown(i.name);
+    let hasHistory=ah.length>0;
+
+    let essVal=document.getElementById('ess-sel-btn')?.getAttribute('data-val')||'';
+    let activeType=sel?wsType:null, activeComp=sel?wsComp:null, activeEss=sel?essVal:null;
+
+    let cls='ws-card'+(sel?' sel':'')+(onCd?' oncd':'');
+    let attTxt=hasHistory?`<span class="ws-card-atts">${ah.length}×</span>`:'';
+    let click=onCd?'':`onclick="selWsTarget('${i.name.replace(/'/g,"\\'")}')"`; 
+    let nameHtml=`<div class="ws-card-name">${i.name}</div>`;
+    let cdHtml=onCd?`<div class="ws-card-cd"><span class="cd-tmr" data-cd="${i.cooldown}">--:--</span></div>`:'';
+
+    if(!hasHistory && !onCd){
+        // Fresh — no history, not on cooldown: Begin Project button
+        return`<div class="${cls} fresh" ${click}>${nameHtml}<button class="ws-card-begin-btn" tabindex="-1">Begin Project</button></div>`;
+    }
+    if(!hasHistory && onCd){
+        // On cooldown with no history yet — show name + timer only
+        return`<div class="${cls}" ${click}>${nameHtml}${cdHtml}</div>`;
+    }
+
+    // Has history — show all 3 pills, timer above pills
+    const mk=(confirmed, active, klass)=>{
+        let isFilled = !!active;
+        let isNew = isFilled && animPill===klass;
+        let unk = !confirmed && !active ? ' kp-unk' : '';
+        let label = active ? active : (confirmed || 'Unknown');
+        let animCls = isNew ? ' anim' : '';
+        return`<span class="ws-kpill kp-${klass}${isFilled?' filled':''}${animCls}${unk}">${label}</span>`;
+    };
+    let pills=`<div class="ws-card-pills">${mk(k.type,activeType,'type')}${mk(k.comp,activeComp,'comp')}${mk(k.ess,activeEss,'ess')}</div>`;
+    return`<div class="${cls}" ${click}>${attTxt}${nameHtml}${cdHtml}${pills}</div>`;
+}
+
+function renderWS(){
+    const PER_PAGE = 8;
+    let now=Date.now(), q=(document.getElementById('ws-search')?.value||'').toLowerCase();
+    let all=wsd.items.filter(i=>!q||i.name.toLowerCase().includes(q)).sort((a,b)=>nsort(a.name,b.name));
+    let show=[];
+    if(wsFilter==='progress') show=all.filter(i=>wsHasProgress(i,now));
+    else if(wsFilter==='avail') show=all.filter(i=>i.cooldown<=now);
+    else if(wsFilter==='cd')   show=all.filter(i=>i.cooldown>now);
+    else show=all;
+
+    let totalPages=Math.max(1,Math.ceil(show.length/PER_PAGE));
+    if(wsPage>=totalPages)wsPage=totalPages-1;
+    if(wsPage<0)wsPage=0;
+    let pageItems=show.slice(wsPage*PER_PAGE,(wsPage+1)*PER_PAGE);
+
+    // Pad to 8 cards with blank fillers (no text, greyed out)
+    let rh=pageItems.map(i=>renderWsCard(i,now)).join('');
+    let empties=PER_PAGE-pageItems.length;
+    if(show.length===0){
+        rh=`<div class="ws-empty" style="grid-column:1/-1;">No blueprints match.</div>`;
+    } else {
+        for(let e=0;e<empties;e++) rh+=`<div class="ws-card blank"></div>`;
+    }
+    document.getElementById('ws-list').innerHTML=rh;
+
+    // Pagination controls
+    let pager=document.getElementById('ws-pager');
+    let prevBtn=document.getElementById('ws-prev'), nextBtn=document.getElementById('ws-next');
+    let pageInfo=document.getElementById('ws-page-info');
+    if(totalPages>1){
+        pager.style.display='flex';
+        prevBtn.disabled=wsPage===0;
+        nextBtn.disabled=wsPage>=totalPages-1;
+        pageInfo.innerText=`${wsPage+1} / ${totalPages}`;
+    } else {
+        pager.style.display='none';
+    }
+
+    let th='',ch='';
+    [...wsd.types].sort(nsort).forEach(t=>{let ac=wsType===t?'sel type-sel':'';th+=`<div class="ws-pi ${ac}" onclick="setWsType('${t.replace(/'/g,"\\'")}')"> ${t}</div>`;});
+    [...wsd.components].sort(nsort).forEach(c=>{let ac=wsComp===c?'sel comp-sel':'';ch+=`<div class="ws-pi ${ac}" onclick="setWsComp('${c.replace(/'/g,"\\'")}')"> ${c}</div>`;});
+    document.getElementById('pool-types').innerHTML=th||`<div style="color:var(--muted);font-style:italic;font-size:.85em;padding:8px;">No types lodged.</div>`;
+    document.getElementById('pool-comps').innerHTML=ch||`<div style="color:var(--muted);font-style:italic;font-size:.85em;padding:8px;">No components lodged.</div>`;
+
+    // Custom essence dropdown
+    let curEss=document.getElementById('ess-sel-btn')?.getAttribute('data-val')||'';
+    let dd=document.getElementById('ess-dropdown');
+    if(dd){
+        dd.innerHTML=essLevels.map(e=>`<div class="ess-opt${curEss===e.name?' chosen':''}" onclick="selectEss('${e.name.replace(/'/g,"\'")}')">${e.name}</div>`).join('');
+    }
+
+    let wa=document.getElementById('ws-work');
+    if(wsTarget) wa.classList.add('on'); else wa.classList.remove('on');
+    updateFormUI(); renderAttHist();
+}
+
+function selWsTarget(name){
+    let item=wsd.items.find(i=>i.name===name); if(!item||item.cooldown>Date.now())return;
+    // Reset formula
+    wsType=null; wsComp=null;
+    let eb=document.getElementById('ess-sel-btn');
+    if(eb){eb.removeAttribute('data-val');eb.className='ess-sel-btn';eb.innerText='— Select Essence Tier —';}
+    wsTarget=name;
+    // Auto-fill confirmed correct slots from history
+    let hist=attHist[name]||[], kType=null, kComp=null, kEss=null;
+    hist.forEach(a=>{if(a.tc&&!kType)kType=a.type;if(a.cc&&!kComp)kComp=a.comp;if(a.ec&&!kEss)kEss=a.ess;});
+    if(kType)wsType=kType;
+    if(kComp)wsComp=kComp;
+    if(kEss){
+        let eb2=document.getElementById('ess-sel-btn');
+        if(eb2){eb2.setAttribute('data-val',kEss);eb2.innerText=kEss;eb2.classList.add('on','filled-tl');}
+        let dd=document.getElementById('ess-dropdown');
+        if(dd)dd.querySelectorAll('.ess-opt').forEach(o=>o.classList.toggle('chosen',o.innerText===kEss));
+    }
+    renderWS();
+    // updateFormUI with null so filled slots show filled but no wobble animation
+    updateFormUI(null);
+}
+function animSlot(id,wasSet){
+    let el=document.getElementById(id); if(!el)return;
+    el.classList.remove('anim-fill','anim-swap','anim-clear');
+    void el.offsetWidth;
+    el.classList.add(wasSet?'anim-swap':'anim-fill');
+    setTimeout(()=>el.classList.remove('anim-fill','anim-swap'),400);
+}
+function animSlotClear(id){
+    let el=document.getElementById(id); if(!el)return;
+    el.classList.remove('anim-fill','anim-swap','anim-clear');
+    void el.offsetWidth;
+    el.classList.add('anim-clear');
+    setTimeout(()=>el.classList.remove('anim-clear'),300);
+}
+function setWsType(t){
+    let was=!!wsType; wsType=t; renderWS();
+    // Only animate the fslot on first fill; swaps pass null
+    updateFormUI(was ? null : 'eq');
+}
+function setWsComp(c){
+    let was=!!wsComp; wsComp=c; renderWS();
+    // Only animate the fslot on first fill; swaps pass null
+    updateFormUI(was ? null : 'p1');
+}
+
+function toggleEssDrop(e){
+    e.stopPropagation();
+    let dd=document.getElementById('ess-dropdown'); dd.classList.toggle('open');
+}
+function selectEss(val){
+    let btn=document.getElementById('ess-sel-btn'), dd=document.getElementById('ess-dropdown');
+    let wasEmpty = !btn.classList.contains('filled-tl');
+    btn.setAttribute('data-val',val); btn.innerText=val;
+    btn.className=`ess-sel-btn on filled-tl${wasEmpty?' anim':''}`;
+    dd.querySelectorAll('.ess-opt').forEach(o=>o.classList.toggle('chosen',o.innerText===val));
+    dd.classList.remove('open');
+    updateFormUI('p2');
+}
+document.addEventListener('click',()=>{let dd=document.getElementById('ess-dropdown');if(dd)dd.classList.remove('open');});
+
+function updateFormUI(wobbleSym){
+    const s=(el,txt,cls)=>{el.innerText=txt;el.className=cls;};
+    let ft=document.getElementById('fs-target'),fty=document.getElementById('fs-type'),fc=document.getElementById('fs-comp');
+    wsTarget ? s(ft,wsTarget,'fslot on tp') : s(ft,'Select Target Blueprint','fslot');
+    wsType   ? s(fty,wsType,'fslot on tb')  : s(fty,'Select Taxonomy','fslot');
+    wsComp   ? s(fc,wsComp,'fslot on tg')   : s(fc,'Select Component','fslot');
+
+    let essVal=document.getElementById('ess-sel-btn')?.getAttribute('data-val')||'';
+    let eq=document.getElementById('ms-eq'), p1=document.getElementById('ms-plus1'), p2=document.getElementById('ms-plus2');
+    if(!eq||!p1||!p2)return;
+
+    // Determine connection state for each symbol
+    let eqLit=wsTarget&&wsType, p1Lit=wsType&&wsComp, p2Lit=wsComp&&essVal;
+
+    function applySymState(el, upFilled, downFilled, isLit, symId){
+        let cls='math-sym';
+        if(upFilled)  cls+=' line-up';
+        if(downFilled) cls+=' line-down';
+        if(isLit)     cls+=' lit-eq ring'; // reuse lit-eq gold for all when connected
+        el.className=cls;
+        // Wobble if this sym was the one changed while already lit
+        if(wobbleSym===symId && isLit){
+            el.classList.remove('wobble'); void el.offsetWidth;
+            el.classList.add('wobble');
+            setTimeout(()=>el.classList.remove('wobble'),500);
+        }
+    }
+
+    applySymState(eq,  !!wsTarget, !!wsType,  eqLit, 'eq');
+    applySymState(p1,  !!wsType,   !!wsComp,  p1Lit, 'p1');
+    applySymState(p2,  !!wsComp,   !!essVal,  p2Lit, 'p2');
+
+    // Update fslot filled states — anim only on the slot that just changed (same pattern as animPill in cards)
+    // wobbleSym: 'eq'→type changed, 'p1'→comp changed, 'p2'→ess changed, null→no animation
+    const animFslot = wobbleSym==='eq' ? 'fs-type' : wobbleSym==='p1' ? 'fs-comp' : null;
+    const setFslot=(id, val, fillCls, emptyTxt)=>{
+        let el=document.getElementById(id); if(!el) return;
+        if(val){
+            let doAnim = id===animFslot;
+            el.innerText=val;
+            el.className=`fslot on ${fillCls}${doAnim?' anim':''}`;
+        } else {
+            el.innerText=emptyTxt; el.className='fslot';
+        }
+    };
+    setFslot('fs-target', wsTarget, 'tp',         'Select Target Blueprint');
+    setFslot('fs-type',   wsType,   'tb filled-tb','Select Taxonomy');
+    setFslot('fs-comp',   wsComp,   'tg filled-tg','Select Component');
+    // Essence handled by ess-sel-btn
+
+    // Re-render only the selected card, animating only the changed pill
+    if(wsTarget){
+        let card=document.querySelector('.ws-card.sel');
+        if(card){
+            let now=Date.now();
+            let item=wsd.items.find(i=>i.name===wsTarget);
+            if(item){
+                // Determine which pill slot just changed (passed as wobbleSym context)
+                let animPill = wobbleSym==='p1'?'comp' : wobbleSym==='p2'?'ess' : wobbleSym==='eq'?'type' : null;
+                let newHtml=renderWsCard(item,now,animPill);
+                let tmp=document.createElement('div'); tmp.innerHTML=newHtml;
+                card.replaceWith(tmp.firstChild);
+            }
+        }
+    }
+}
+
+function renderAttHist(){
+    let el=document.getElementById('att-hist'), rows=document.getElementById('att-rows');
+    if(!wsTarget||!attHist[wsTarget]?.length){el.classList.remove('on');return;}
+    el.classList.add('on');
+    rows.innerHTML=attHist[wsTarget].map((a,i)=>`
+        <div class="att-row">
+            <span class="att-num">${i+1}.</span>
+            <span class="att-pill ${a.tc?'ok':'bad'}" title="${a.type}">${a.type}</span>
+            <span class="att-pill ${a.cc?'ok':'bad'}" title="${a.comp}">${a.comp}</span>
+            <span class="att-pill ${a.ec?'ok':'bad'}" title="${a.ess}">${a.ess.replace(' Essence','').replace('No Essence Needed','None')}</span>
+        </div>`).join('');
+}
+
+function trySynth(){
+    let essBtn=document.getElementById('ess-sel-btn'), ev=essBtn?.getAttribute('data-val')||'';
+    if(!wsTarget||!wsType||!wsComp||!ev){alert('Fill all formula slots first.');return;}
+    let recipe=recipeData[wsTarget]; if(!recipe?.components)return;
+    let ev2=ev==='No Essence Needed'?'Mundane':ev;
+    let cm=false,em=false,tm=false;
+    recipe.components.forEach(c=>{
+        let cl=c.toLowerCase();
+        if(cl.includes(wsComp.toLowerCase()))cm=true;
+        if(cl.includes(ev2.toLowerCase()))em=true;
+        if(ev2==='Mundane'&&!cl.includes('essence'))em=true;
+        if(cl.includes(wsType.toLowerCase()))tm=true;
+    });
+    let typeReq=recipe.components.some(c=>c.includes('(')); if(!typeReq)tm=true;
+    let rec={type:wsType,comp:wsComp,ess:ev,tc:tm,cc:cm,ec:em};
+    let sb=document.getElementById('synth-box'), sm=document.getElementById('synth-modal');
+    let sst=document.getElementById('synth-st'), sit=document.getElementById('synth-it'), sds=document.getElementById('synth-ds'), scd=document.getElementById('synth-cd');
+    if(cm&&em&&tm){
+        sb.className='synth-box ok'; sst.style.color='var(--gold)'; sst.innerText='Blueprint Unlocked';
+        sit.style.color='var(--gold)'; sit.innerText=wsTarget;
+        sds.innerHTML=`The formula resolves. <strong style="color:var(--gold);">${wsTarget}</strong> has been reverse-engineered and permanently added to your Recipe Book.`;
+        scd.style.display='none';
+        learned.push(wsTarget); localStorage.setItem('learnedRecipes',JSON.stringify(learned));
+        wsd.items=wsd.items.filter(i=>i.name!==wsTarget); localStorage.setItem('wsData',JSON.stringify(wsd));
+        delete attHist[wsTarget]; localStorage.setItem('attemptHistory',JSON.stringify(attHist));
+        let successName=wsTarget; wsTarget=null; renderWS(); renderRB();
+    } else {
+        if(!attHist[wsTarget])attHist[wsTarget]=[];
+        attHist[wsTarget].push(rec); localStorage.setItem('attemptHistory',JSON.stringify(attHist));
+        let idx=wsd.items.findIndex(i=>i.name===wsTarget);
+        if(idx>-1){wsd.items[idx].cooldown=Date.now()+(2*60*60*1000);localStorage.setItem('wsData',JSON.stringify(wsd));}
+        sb.className='synth-box bad'; sst.style.color='var(--red)'; sst.innerText='Synthesis Failed';
+        sit.style.color='var(--red)'; sit.innerText=wsTarget;
+        sds.innerText=`The formula for ${wsTarget} collapsed. Your workspace is locked for 2 hours.`;
+        scd.style.display='block'; scd.innerText='Cooldown: 02:00:00';
+        let end=Date.now()+(2*60*60*1000),tk=setInterval(()=>{let r=Math.max(0,Math.floor((end-Date.now())/1000));scd.innerText=`Cooldown: ${Math.floor(r/3600).toString().padStart(2,'0')}:${Math.floor((r%3600)/60).toString().padStart(2,'0')}:${(r%60).toString().padStart(2,'0')}`;if(r<=0)clearInterval(tk);},1000);
+        wsTarget=null; wsType=null; wsComp=null;
+        let eb3=document.getElementById('ess-sel-btn'); if(eb3){eb3.removeAttribute('data-val');eb3.className='ess-sel-btn';eb3.innerText='— Select Essence Tier —';}
+        ['fs-target','fs-type','fs-comp'].forEach(id=>{let el=document.getElementById(id);if(el){el.className='fslot';el.innerText=id==='fs-target'?'Select Target Blueprint':id==='fs-type'?'Select Taxonomy':'Select Component';}});
+        renderWS();
+    }
+    sm.style.display='flex';
+}
+
+// ── Recipe Book ────────────────────────────────────────────────────────────
+function renderRB(){
+    let q=document.getElementById('rb-search').value.toLowerCase(), f=document.getElementById('rb-filter').value;
+    let all=[...new Set([...starterRecipes,...learned])].sort(nsort);
+    all.sort((a,b)=>{let ap=pinned.includes(a),bp=pinned.includes(b);if(ap&&!bp)return-1;if(!ap&&bp)return 1;return nsort(a,b);});
+    let html='';
+    all.forEach(name=>{
+        let r=recipeData[name]; if(!r)return;
+        let typeMatch=f==='All'||(f==='Favorited'&&pinned.includes(name))||(r.type?.includes(f))||(r.category?.includes(f));
+        let sm=name.toLowerCase().includes(q)||(r.type||'').toLowerCase().includes(q);
+        if(!typeMatch||!sm)return;
+        let ip=pinned.includes(name);
+        html+=`<div class="rc">
+            <div class="rc-acts">
+                <button class="nav-btn" style="font-size:.65em;padding:2px 6px;color:var(--green);border-color:var(--green);height:24px;" onclick="copyRC('${name.replace(/'/g,"\\'")}')">COPY</button>
+                <button class="pin-btn ${ip?'on':''}" onclick="togglePin('${name.replace(/'/g,"\\'")}')"> ${ip?'★':'☆'}</button>
+            </div>
+            <h3>${name}</h3>
+            <div class="rc-tags">${r.rarity} ${r.type}</div>
+            <div class="rc-meta">Base DC: ${r.baseDC} | Time: ${r.baseTime} hrs${r.requiredCheck?` | Check: ${r.requiredCheck}`:''}</div>
+            <div class="rc-comp"><strong style="color:var(--green);">Components:</strong><br>${r.components?r.components.join('<br>'):'None specified.'}</div>
+            ${r.stats?`<div style="font-size:.85em;color:var(--text);margin-top:10px;font-style:italic;border-top:1px dashed var(--border);padding-top:8px;">${r.stats}</div>`:''}
+        </div>`;
+    });
+    document.getElementById('rb-grid').innerHTML=html||`<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-style:italic;padding:40px;">No recipes found.</div>`;
+}
+function togglePin(n){pinned.includes(n)?pinned=pinned.filter(p=>p!==n):pinned.push(n);localStorage.setItem('pinnedRecipes',JSON.stringify(pinned));renderRB();}
+function copyRC(n){
+    let r=recipeData[n];if(!r)return;
+    let t=`📜 RECIPE: ${n.toUpperCase()}\nType: ${r.rarity} ${r.type}\n${'─'.repeat(40)}\nTarget DC: ${r.baseDC}\nCrafting Time: ${r.baseTime} Hours\nRequired Check: ${r.requiredCheck||'None'}\n${'─'.repeat(40)}\nCOMPONENTS:\n${r.components?r.components.map(c=>'- '+c).join('\n'):'- None'}\n\nEFFECTS:\n${r.stats||'No additional stats.'}`;
+    navigator.clipboard.writeText(t).then(()=>alert(`"${n}" copied!`));
+}
+
+// ── Cauldron ───────────────────────────────────────────────────────────────
+function renderCauldron(){
+    // All cooking recipes available up front, grouped by tier
+    const tierOrder = ['Novice','Journeyman','Expert','Artisan','Boss Meal'];
+    const tiers = {};
+    for (let n in recipeData) {
+        let r = recipeData[n];
+        if (r.category !== 'Cooking') continue;
+        let tier = r.type === 'Boss Meal' ? 'Boss Meal' : r.rarity;
+        if (!tiers[tier]) tiers[tier] = [];
+        tiers[tier].push(n);
+    }
+    // Sort within each tier
+    for (let t in tiers) tiers[t].sort(nsort);
+
+    let html = '';
+    tierOrder.forEach(tier => {
+        let meals = tiers[tier];
+        if (!meals || !meals.length) return;
+        let items = meals.map(r => {
+            let ac = cldRecipe === r ? 'sel' : '';
+            return `<div class="cld-item ${ac}" onclick="setCld('${r.replace(/'/g,"\\'")}')">${r}</div>`;
+        }).join('');
+        html += `<div style="margin-bottom:var(--space-3);">
+            <div style="font-size:.7em; text-transform:uppercase; letter-spacing:1px; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border-subtle); margin-bottom:var(--space-2);">${tier}</div>
+            ${items}
+        </div>`;
+    });
+
+    document.getElementById('cld-list').innerHTML = html || `<div style="color:var(--muted);font-style:italic;font-size:.88em;padding:12px;">No cooking recipes found in data.</div>`;
+    let idle=document.getElementById('cld-idle'), wrap=document.getElementById('cld-config-wrap');
+    if(!cldRecipe){ idle.classList.remove('hidden'); wrap.classList.remove('on'); }
+}
+
+function setCld(r){ cldRecipe=r; renderCauldron(); buildCldConfig(r); }
+
+function buildCldConfig(rn){
+    let rd=recipeData[rn]; if(!rd?.components)return;
+    let idle=document.getElementById('cld-idle'), wrap=document.getElementById('cld-config-wrap');
+    idle.classList.add('hidden');
+    wrap.classList.add('on');
+    let ih='';
+    rd.components.forEach((comp,i)=>{
+        let isSpice=comp.toLowerCase().includes('spice');
+        let edible=['Blood','Bone','Brain','Egg','Eye','Fat','Flesh','Heart','Liver','Spice'];
+        let isTentacle=comp.toLowerCase().includes('tentacle');
+        let al=isSpice?['Spice']:isTentacle?['Tentacle']:edible.filter(p=>comp.toLowerCase().includes(p.toLowerCase()));
+        if(!al.length)al=edible;
+        let vt=compTypeMap[al[0]]||coreTypes; // Tentacle not in compTypeMap → falls back to all coreTypes
+        // Part is fixed by recipe — no dropdown needed. Only creature type is selected.
+        let partLabel=al[0]; // the required part
+        let types=`<option value="" disabled selected>Creature Type...</option><option value="None">None (Rations)</option>`+vt.map(t=>`<option value="${t}">${t}</option>`).join('');
+        ih+=`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-subtle);">
+            <div style="flex:1.4;color:var(--muted);font-size:.85em;">Slot ${i+1}: <span style="color:var(--text);font-size:.9em;">${comp.replace(/^\d+x\s/i,'')}</span></div>
+            <select class="cld-st" data-i="${i}" data-part="${partLabel}" onchange="updateMix()" style="flex:1;padding:6px 8px;font-size:.85em;">${types}</select>
+        </div>`;
+    });
+    document.getElementById('ing-list').innerHTML=ih;
+    document.getElementById('cook-roll').value='';
+    document.getElementById('hlp-chk').checked=false; toggleCookHelper();
+    document.getElementById('cook-out').style.display='none';
+    updateMix();
+}
+
+function toggleCookHelper(){
+    let c=document.getElementById('hlp-chk').checked;
+    let inp=document.getElementById('hlp-inputs');
+    inp.style.display=c?'flex':'none';
+}
+
+function updateMix(){
+    let rd=recipeData[cldRecipe]; if(!rd)return;
+    let essSel=document.getElementById('cld-ess'), ri=essSel?essSel.selectedIndex:0;
+    let typeEls=Array.from(document.querySelectorAll('.cld-st'));
+    let o=`<h4 style="color:var(--gold);margin-top:0;font-size:1.2em;margin-bottom:4px;">${cldRecipe}</h4>
+        <div style="display:flex;gap:20px;font-size:.88em;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;color:var(--muted);">
+            <span><strong style="color:var(--text);">Base DC:</strong> ${rd.baseDC}</span>
+            <span><strong style="color:var(--text);">Time:</strong> ${rd.baseTime} hrs</span>
+            <span><strong style="color:var(--text);">Check:</strong> ${rd.requiredCheck}</span>
+        </div>`;
+
+    // Extract [BASE EFFECT] from stats if present (multi-ingredient recipes)
+    let baseEffect=null;
+    if(rd.stats){
+        let m=rd.stats.match(/\[BASE EFFECT\]\s*\n([\s\S]*?)(?=\n\n|$)/);
+        if(m) baseEffect=m[1].trim();
+    }
+
+    let buffs=[];
+    // Base effect first if this is a multi-ingredient (non-Novice) recipe
+    if(baseEffect){
+        buffs.push(`<li style="margin-bottom:6px;color:var(--text);font-style:italic;"><strong>Base Effect:</strong> ${baseEffect}</li>`);
+    }
+
+    for(let el of typeEls){
+        let type=el.value, part=el.getAttribute('data-part');
+        if(!type||!part)continue;
+        // None (Rations) suppresses this slot's buff entirely
+        if(type==='None'){
+            buffs.push(`<li style="margin-bottom:5px;color:var(--muted);">Slot ${parseInt(el.getAttribute('data-i'))+1} (Rations): No magical effect.</li>`);
+            continue;
+        }
+        let txt=getIngredientBuff(part,type)||'No magical benefit from this combination.';
+        if(ri>0 && txt!=='No magical benefit from this combination.'){
+            txt=txt.replace(/1d(\d+)/g,`${ri+1}d$1`).replace(/\+1(?! hit)/g,`+${ri+1}`).replace(/(\d+) ft\./g,(_,n)=>`${parseInt(n)*(ri+1)} ft.`);
+        }
+        buffs.push(`<li style="margin-bottom:5px;"><strong>${part} (${type}):</strong> ${txt}</li>`);
+    }
+    o+=`<div style="font-size:.92em;margin-bottom:14px;"><strong>Combined Meal Buffs:</strong>`;
+    if(buffs.length){
+        let essName=essSel?.options[essSel.selectedIndex]?.text||'';
+        o+=`<ul style="margin-top:6px;padding-left:20px;color:var(--green);">${buffs.join('')}</ul>`;
+        if(ri>0) o+=`<div style="font-size:.82em;color:var(--muted);font-style:italic;margin-top:8px;">*Potency scaled to ${essName} tier.</div>`;
+    } else {
+        o+=`<div style="color:var(--muted);font-style:italic;margin-top:6px;">Select creature type for each slot to see buffs.</div>`;
+    }
+    // Build flavour text for selected ingredients
+    let flavourEntries=[];
+    for(let el of typeEls){
+        let type=el.value, part=el.getAttribute('data-part');
+        if(!type||!part||type==='None')continue;
+        let blurb=getIngredientFlavour(part,type);
+        if(!blurb)continue;
+        let key=`${part}:${type}`;
+        if(!flavourEntries.find(e=>e.key===key)) flavourEntries.push({key,part,type,blurb});
+    }
+    let flavourHtml='';
+    if(flavourEntries.length){
+        flavourHtml=`<div style="margin-top:14px;border-top:1px dashed var(--border);padding-top:12px;">
+            <div style="font-size:.78em;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Ingredient Lore</div>
+            ${flavourEntries.map(e=>`<div style="margin-bottom:10px;">
+                <div style="font-size:.8em;color:var(--gold);font-weight:600;margin-bottom:3px;">${e.part} (${e.type})</div>
+                <div style="font-size:.82em;color:var(--muted);font-style:italic;line-height:1.5;">${e.blurb}</div>
+            </div>`).join('')}
+        </div>`;
+    }
+    o+=`</div><div style="font-size:.85em;border-top:1px dashed var(--border);padding-top:12px;color:var(--muted);font-style:italic;">Yield: 1 Large or 4 Medium portions. Duration: 8 hours.</div>${flavourHtml}`;
+    document.getElementById('mix-area').innerHTML=o;
+}
+
+function execCook(){
+    if(!cldRecipe)return;
+    let rd=recipeData[cldRecipe];if(!rd)return;
+    let cr=parseInt(document.getElementById('cook-roll').value);if(isNaN(cr)){alert("Enter the Cook's roll.");return;}
+    let fr=cr;
+    if(document.getElementById('hlp-chk').checked){let pb=parseInt(document.getElementById('hlp-pb').value)||0,isP=document.getElementById('hlp-prof').value==='full';fr+=isP?pb:Math.floor(pb/2);}
+    let dc=rd.baseDC, m=fr-dc, ri=document.getElementById('cld-ess')?.selectedIndex||0;
+    let nf=0,nb=0;
+    if(m<=-13)nf=4;else if(m<=-9)nf=3;else if(m<=-5)nf=2;else if(m<=-1)nf=1;
+    else if(m>=13)nb=3;else if(m>=9)nb=2;else if(m>=5)nb=1;
+    let cap=''; if(nb>ri){cap=`<span style="font-size:.82em;color:var(--muted);font-style:italic;display:block;margin-top:6px;">*Roll allowed ${nb} boon(s), but essence limits this meal to ${ri}.</span>`;nb=ri;}
+    let shuf=a=>[...a].sort(()=>0.5-Math.random());
+    let out=document.getElementById('cook-out'); out.style.display='block';
+    if(nf>0){out.style.background='rgba(231,76,60,.1)';out.style.border='1px solid var(--red)';let f=shuf(cookFlaws).slice(0,nf);out.innerHTML=`<strong style="color:var(--red);">Failed (${fr} vs DC ${dc})</strong><br>Meal imposes <strong>${nf} Flaw(s)</strong>:<ul style="margin-top:8px;color:var(--red);padding-left:20px;"><li>${f.join('</li><li>')}</li></ul>`;}
+    else if(nb>0){out.style.background='rgba(46,204,113,.1)';out.style.border='1px solid var(--green)';let b=shuf(cookBoons).slice(0,nb);out.innerHTML=`<strong style="color:var(--green);">Exceptional! (${fr} vs DC ${dc})</strong><br>Grants <strong>${nb} Boon(s)</strong>:<ul style="margin-top:8px;color:var(--green);padding-left:20px;"><li>${b.join('</li><li>')}</li></ul>${cap}`;}
+    else{out.style.background='rgba(46,204,113,.08)';out.style.border='1px solid var(--green)';out.innerHTML=`<strong style="color:var(--green);">Standard Meal (${fr} vs DC ${dc})</strong><br><span style="color:var(--text);">Cooked properly — imparts standard effects with no additional quirks.</span>${cap}`;}
+}
+
+// ── Raw Diet ───────────────────────────────────────────────────────────────
+function calcRaw(){
+    let type=document.getElementById('raw-type').value, comp=document.getElementById('raw-comp').value;
+    let cm=parseInt(document.getElementById('raw-con').value), rt=parseInt(document.getElementById('raw-roll').value);
+    let crit=document.querySelector('input[name="rcrit"]:checked').value;
+    if(!type||!comp||isNaN(cm)||(crit==='none'&&isNaN(rt))){alert('Fill in all fields first.');return;}
+    let bdc=creatureData[type]?.parts?.find(p=>p.name.toLowerCase().includes(comp.toLowerCase()))?.dc||0;
+    let saveDC=Math.max(15,bdc);
+    let dmg=cm>=6?"0":cm===5?"1d6":cm>=1?"2d6":cm===0?"3d6":"4d6";
+    let buff=getIngredientBuff(comp,type)||'No magical benefit from this combination.';
+    let rawFlavour=getIngredientFlavour(comp,type)||null;
+    let ok=crit==='nat20'?true:crit==='nat1'?false:rt>=saveDC;
+    let o=`<div style="margin-bottom:10px;"><strong>CON Save DC:</strong> <span style="color:var(--gold);font-size:1.2em;">${saveDC}</span> <span style="font-size:.8em;color:var(--muted);">(harvest DC: ${bdc||'N/A'})</span></div>`;
+    if(ok){
+        o+=`<div style="color:var(--green);margin-bottom:8px;"><strong>Success:</strong> For 1 hour — ${buff}</div>`;
+        if(crit==='nat20'){let h=Math.max(0,cm*2);o+=`<div style="color:var(--green);margin-bottom:8px;"><strong>Critical!</strong> Also regain ${h} HP.</div>`;}
+    } else {
+        let actualDmg=crit==='nat1'?'4d6':dmg, dt=actualDmg==='0'?'no poison damage':`${actualDmg} poison damage`;
+        o+=`<div style="color:var(--red);margin-bottom:8px;"><strong>Failure${crit==='nat1'?' (Critical)':''}:</strong> Take ${dt}${crit!=='nat1'?' and become <em>poisoned</em> for 1 hour.':'.'}</div>`;
+        if(crit!=='nat1')o+=`<div style="font-size:.85em;font-style:italic;color:var(--muted);margin-bottom:8px;">(Poisoned: disadvantage on attacks and ability checks.)</div>`;
+    }
+    if(rawFlavour){
+        o+=`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+            <div style="font-size:.78em;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Ingredient Lore</div>
+            <div style="font-size:.82em;color:var(--muted);font-style:italic;line-height:1.5;">${rawFlavour}</div>
+        </div>`;
+    }
+    let el=document.getElementById('raw-out'); el.innerHTML=o; el.style.display='block';
+}
+
+// ── Socketing Tab ─────────────────────────────────────────────────────────
+let skSelected = null;
+
+function skGetSocketables() {
+    if (typeof recipeData === 'undefined') return [];
+    return Object.entries(recipeData)
+        .map(([name, data]) => ({ name, ...data }))
+        .filter(i => i.socketable === true);
+}
+
+function skRarityClass(r) {
+    return 'rarity-' + (r || 'common').toLowerCase().replace(' ', '-');
+}
+
+function skSearch() {
+    const q = document.getElementById('sk-search').value.trim().toLowerCase();
+    const list = document.getElementById('sk-list');
+    const items = skGetSocketables().filter(i => !q || i.name.toLowerCase().includes(q));
+
+    if (!items.length) {
+        list.innerHTML = '<div style="color:var(--muted); font-style:italic; font-size:.85em; padding:var(--space-3);">No socketable items found.</div>';
+        return;
+    }
+
+    list.innerHTML = items.map(i => `
+        <div onclick="skSelect('${i.name.replace(/'/g,"\\'")}')"
+             style="display:grid; grid-template-columns:1fr auto; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-4); background:var(--depth-inset); border:1px solid ${skSelected?.name === i.name ? 'var(--gold)' : 'var(--border-subtle)'}; border-radius:var(--radius-sm); cursor:pointer; transition:all .2s; ${skSelected?.name === i.name ? 'background:rgba(212,175,55,.08);' : ''}"
+             onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='var(--gold)';this.style.background='rgba(212,175,55,.04)'"
+             onmouseout="if('${i.name}'!=='${skSelected?.name||''}'){this.style.borderColor='var(--border-subtle)';this.style.background='var(--depth-inset)'}">
+            <div>
+                <div style="font-size:.9em; color:var(--text); font-weight:bold;">${i.name}</div>
+                <div style="font-size:.78em; color:var(--muted); margin-top:2px;">${i.attunement !== 'No' ? 'Requires Attunement' : 'No Attunement'}</div>
+            </div>
+            <span style="font-size:.75em; font-weight:bold; text-transform:uppercase; letter-spacing:.5px; padding:2px 8px; border-radius:99px; border:1px solid;" class="${skRarityClass(i.rarity)}">${i.rarity}</span>
+        </div>
+    `).join('');
+}
+
+function skSelect(name) {
+    const items = skGetSocketables();
+    skSelected = items.find(i => i.name === name) || null;
+    if (!skSelected) return;
+
+    skSearch(); // re-render list to update selection
+
+    const detail = document.getElementById('sk-detail');
+    detail.style.display = 'block';
+
+    document.getElementById('sk-d-name').textContent = skSelected.name;
+
+    const tags = [skSelected.rarity, 'Socketable'];
+    if (skSelected.type) tags.push(skSelected.type);
+    document.getElementById('sk-d-tags').innerHTML = tags.map(t =>
+        `<span style="font-size:.72em; text-transform:uppercase; letter-spacing:.5px; padding:2px 8px; border-radius:99px; border:1px solid var(--border-subtle); color:var(--muted);" class="${t === skSelected.rarity ? skRarityClass(t) : ''}">${t}</span>`
+    ).join('');
+
+    const attEl = document.getElementById('sk-d-att');
+    if (skSelected.attunement !== 'No') {
+        attEl.style.display = 'block';
+        attEl.innerHTML = 'This socketable requires the host item to be <strong style="color:var(--gold);">attuneable</strong>. If the host doesn\'t normally require attunement, it gains the Optional Attunement property — you only benefit from the socketable while attuned.';
+    } else {
+        attEl.style.display = 'none';
+    }
+
+    document.getElementById('sk-d-stats').innerHTML =
+        skSelected.stats || '<em style="color:var(--muted);">No description available.</em>';
+}
+
+function skResolve() {
+    const roll = parseInt(document.getElementById('sk-roll').value);
+    const result = document.getElementById('sk-result');
+    const DC = 10;
+
+    if (!roll && roll !== 0) { alert('Enter your roll result first.'); return; }
+
+    result.style.display = 'block';
+
+    const itemNote = skSelected
+        ? `<strong>${skSelected.name}</strong>`
+        : 'The socketable item';
+
+    if (roll >= DC) {
+        result.style.borderColor = 'var(--green)';
+        result.style.color = 'var(--green)';
+        result.style.background = 'rgba(46,204,113,.06)';
+        result.innerHTML = `<strong>Success</strong> (${roll} vs DC ${DC}) — ${itemNote} is safely removed. Both the host item and the socketable are intact.`;
+    } else {
+        result.style.borderColor = 'var(--red)';
+        result.style.color = 'var(--red)';
+        result.style.background = 'rgba(231,76,60,.06)';
+        result.innerHTML = `<strong>Failure</strong> (${roll} vs DC ${DC}) — ${itemNote} is <strong>destroyed</strong> during removal. The host item is unaffected.`;
+    }
+}
+
+// Init socketing list on load
+document.addEventListener('DOMContentLoaded', () => { skSearch(); });
+
+// ── Tooltip ────────────────────────────────────────────────────────────────
+const tt=document.getElementById('gtip');
+document.addEventListener('mouseover',e=>{
+    let el=e.target;
+    if(el.classList.contains('prof-tip')){tt.innerHTML=el.getAttribute('data-tip');tt.style.visibility='visible';tt.style.opacity='1';return;}
+    if(el.classList.contains('q-item')||el.classList.contains('tooltip-trigger')){
+        let flavor=el.getAttribute('data-flavor')||''; let comp=el.getAttribute('data-comp')||'';
+        if(flavor||comp){
+            let inner=flavor?`<span style="font-style:italic;color:#e0e0e0;">"${flavor}"</span>`:'';
+            if(comp) inner+=`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(155,89,182,.4);color:var(--gold);font-weight:bold;text-transform:uppercase;font-size:.9em;">${comp}</div>`;
+            tt.innerHTML=inner;
+        } else { tt.innerHTML=`<span style="color:var(--muted);font-style:italic;">Knowledge fades...</span>`; }
+        tt.style.visibility='visible';tt.style.opacity='1';
+    }
+});
+document.addEventListener('mousemove',e=>{tt.style.left=(e.clientX+15)+'px';tt.style.top=(e.clientY+15)+'px';});
+document.addEventListener('mouseout',e=>{let el=e.target;if(el.classList.contains('prof-tip')||el.classList.contains('q-item')||el.classList.contains('tooltip-trigger')){tt.style.visibility='hidden';tt.style.opacity='0';}});
+</script>
+</body>
+</html>

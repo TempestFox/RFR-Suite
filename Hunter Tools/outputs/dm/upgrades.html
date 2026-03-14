@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Forge — DM Suite</title>
+    <link rel="stylesheet" href="../suite.css">
+
+    <script src="../data/database.js"></script>
+    <script src="../data/recipes.js"></script>
+    <script src="../data/Items.js"></script>
+
+    <style>
+        /* ── The Forge — page-specific only ─────────────────────── */
+
+        /* Three-tab mode switcher — extends suite.css toggle-container for 3 states */
+        .forge-tabs {
+            display: flex;
+            background: var(--depth-inset);
+            border: 1px solid var(--green);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: var(--space-6);
+        }
+
+        .forge-tab {
+            flex: 1;
+            padding: 10px 16px;
+            font-family: var(--font-body);
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        .forge-tab:hover:not(.active) {
+            color: var(--text);
+            background: rgba(46, 204, 113, 0.08);
+        }
+
+        .forge-tab.active {
+            background: var(--green);
+            color: var(--depth-inset);
+        }
+
+        /* Section panels */
+        .forge-section { display: none; }
+        .forge-section.active { display: block; }
+
+        /* ── Rarity chain display ── */
+        .rarity-chain {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            margin: var(--space-4) 0;
+        }
+
+        .rarity-node {
+            padding: 5px 14px;
+            border-radius: 99px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+            cursor: default;
+        }
+
+        .rarity-node.current {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(46,204,113,0.08);
+        }
+
+        .rarity-node.target {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(212,175,55,0.08);
+        }
+
+        .rarity-node.future {
+            border-color: var(--border-subtle);
+            color: var(--muted);
+        }
+
+        .chain-arrow {
+            color: var(--muted);
+            font-size: 0.9em;
+        }
+
+        /* Upgrade result card */
+        .result-card {
+            background: var(--depth-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: var(--space-5);
+            margin-top: var(--space-5);
+            display: none;
+        }
+
+        .result-card.visible { display: block; }
+
+        .result-card.success { border-color: var(--green); }
+        .result-card.failure { border-color: var(--red); }
+        .result-card.critical { border-color: var(--gold); }
+
+        .result-header {
+            font-size: 1.1em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-3);
+        }
+
+        .result-card.success .result-header { color: var(--green); }
+        .result-card.failure .result-header { color: var(--red); }
+        .result-card.critical .result-header { color: var(--gold); }
+
+        /* Gate progress row */
+        .gate-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: var(--depth-inset);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-3);
+        }
+
+        .gate-row label {
+            color: var(--muted);
+            font-size: 0.82em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 120px;
+            margin: 0;
+        }
+
+        .gate-row .gate-value {
+            color: var(--text);
+            font-size: 0.95em;
+            flex: 1;
+        }
+
+        .gate-row .gate-status {
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            border: 1px solid;
+        }
+
+        .gate-status.met     { color: var(--green); border-color: var(--green); background: rgba(46,204,113,0.08); }
+        .gate-status.unmet   { color: var(--red);   border-color: var(--red);   background: rgba(231,76,60,0.08);  }
+        .gate-status.unknown { color: var(--muted); border-color: var(--border-subtle); }
+
+        /* APL selector for salvage */
+        .apl-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .apl-btn {
+            padding: 8px 4px;
+            text-align: center;
+            font-family: var(--font-body);
+            font-size: 0.8em;
+            font-weight: bold;
+            background: var(--depth-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .apl-btn:hover { color: var(--text); border-color: var(--border); }
+
+        .apl-btn.active {
+            background: rgba(46,204,113,0.08);
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .apl-btn span {
+            display: block;
+            font-size: 0.75em;
+            font-weight: normal;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .apl-btn.active span { color: rgba(46,204,113,0.7); }
+
+        /* Variable stats display */
+        .vstat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .vstat-box {
+            background: var(--depth-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3) var(--space-4);
+            text-align: center;
+        }
+
+        .vstat-label {
+            font-size: 0.72em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: var(--space-1);
+        }
+
+        .vstat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--green);
+        }
+
+        /* Salvage time display */
+        .salvage-time-box {
+            background: var(--depth-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4) var(--space-5);
+            margin-bottom: var(--space-4);
+        }
+
+        .salvage-time-label {
+            font-size: 0.78em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: var(--space-2);
+        }
+
+        .salvage-time-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        /* Socket grid */
+        .socket-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .socket-panel {
+            background: var(--depth-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4);
+        }
+
+        .socket-panel h3 {
+            font-size: 0.82em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin: 0 0 var(--space-3) 0;
+            padding-bottom: var(--space-2);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .socket-rule {
+            font-size: 0.9em;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .socket-rule strong {
+            color: var(--green);
+        }
+
+        /* Roll result flash */
+        @keyframes resultFlash {
+            0%   { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card.visible {
+            animation: resultFlash 0.25s ease forwards;
+        }
+
+        /* ── Socketable item search results ── */
+        .socketable-list {
+            display: grid;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .socketable-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: var(--depth-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .socketable-item:hover {
+            border-color: var(--green);
+            background: rgba(46,204,113,0.04);
+        }
+
+        .socketable-item.selected {
+            border-color: var(--green);
+            background: rgba(46,204,113,0.08);
+        }
+
+        .socketable-name {
+            font-size: 0.9em;
+            color: var(--text);
+            font-weight: bold;
+        }
+
+        .socketable-meta {
+            font-size: 0.78em;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .socketable-rarity {
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 99px;
+            border: 1px solid;
+        }
+
+        /* Rarity colours */
+        .rarity-common     { color: #aaa;     border-color: #aaa;     }
+        .rarity-uncommon   { color: #2ecc71;  border-color: #2ecc71;  }
+        .rarity-rare       { color: #3498db;  border-color: #3498db;  }
+        .rarity-very-rare  { color: #9b59b6;  border-color: #9b59b6;  }
+        .rarity-legendary  { color: #d4af37;  border-color: #d4af37;  }
+        .rarity-artifact   { color: #e74c3c;  border-color: #e74c3c;  }
+
+        /* Selected socketable detail card */
+        .socketable-detail {
+            background: var(--depth-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4) var(--space-5);
+            margin-top: var(--space-4);
+            display: none;
+        }
+
+        .socketable-detail.visible { display: block; }
+
+        .detail-name {
+            font-size: 1.05em;
+            font-weight: bold;
+            color: var(--gold);
+            margin-bottom: var(--space-2);
+        }
+
+        .detail-tags {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-3);
+        }
+
+        .detail-tag {
+            font-size: 0.72em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 99px;
+            border: 1px solid var(--border-subtle);
+            color: var(--muted);
+        }
+
+        .detail-stats {
+            font-size: 0.88em;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Removal DC result */
+        .removal-result {
+            display: none;
+            margin-top: var(--space-4);
+            padding: var(--space-4);
+            border-radius: var(--radius-sm);
+            border: 1px solid;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .removal-result.visible { display: block; }
+        .removal-result.success { border-color: var(--green); color: var(--green); background: rgba(46,204,113,0.06); }
+        .removal-result.failure { border-color: var(--red);   color: var(--red);   background: rgba(231,76,60,0.06);  }
+
+    </style>
+</head>
+<body>
+
+<div id="global-tooltip" class="global-tooltip"></div>
+
+<div class="container">
+
+    <div class="nav-header">
+        <a href="index.html" class="nav-btn">&#8592; DM Suite</a>
+        <button class="nav-btn" onclick="resetAll()">Reset &#10227;</button>
+    </div>
+
+    <h1 class="module-title">The Forge</h1>
+    <div class="module-subtitle">Upgrades · Socketing · Salvaging</div>
+
+    <!-- ── MODE TABS ─────────────────────────────────────────────── -->
+    <div class="forge-tabs">
+        <button class="forge-tab active" onclick="switchTab('upgrades')">&#9650; Upgrades</button>
+        <button class="forge-tab"        onclick="switchTab('socketing')">&#9670; Socketing</button>
+        <button class="forge-tab"        onclick="switchTab('salvaging')">&#9762; Salvaging</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB 1: UPGRADES
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="tab-upgrades" class="forge-section active">
+
+        <div class="control-panel">
+            <div class="setup-grid">
+                <div>
+                    <label>Item to Upgrade</label>
+                    <input type="text" id="upgrade-search" placeholder="Search item name…"
+                           oninput="searchUpgradeable()" autocomplete="off">
+                    <div id="upgrade-search-results" style="display:none; margin-top:var(--space-2); background:var(--depth-inset); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); overflow:hidden;"></div>
+                </div>
+                <div>
+                    <label>Current Rarity</label>
+                    <select id="upgrade-current-rarity" onchange="buildChain()">
+                        <option value="">— Select —</option>
+                        <option value="Mundane">Mundane (non-magical)</option>
+                        <option value="Common">Common</option>
+                        <option value="Uncommon">Uncommon</option>
+                        <option value="Rare">Rare</option>
+                        <option value="Very Rare">Very Rare</option>
+                        <option value="Legendary">Legendary</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Rarity chain display -->
+            <div id="upgrade-chain-wrap" style="display:none; margin-top:var(--space-5);">
+                <label style="margin-bottom:var(--space-2);">Upgrade Path</label>
+                <div id="upgrade-chain" class="rarity-chain"></div>
+            </div>
+
+            <!-- Target info (auto-populated when chain built) -->
+            <div id="upgrade-target-info" style="display:none; margin-top:var(--space-4);">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-4);">
+                    <div class="gate-row" style="flex-direction:column; align-items:flex-start; gap:var(--space-1);">
+                        <label>Target DC</label>
+                        <div class="gate-value" id="upgrade-dc" style="font-size:1.2em; color:var(--gold); font-weight:bold;">—</div>
+                    </div>
+                    <div class="gate-row" style="flex-direction:column; align-items:flex-start; gap:var(--space-1);">
+                        <label>Craft Time</label>
+                        <div class="gate-value" id="upgrade-time">—</div>
+                    </div>
+                    <div class="gate-row" style="flex-direction:column; align-items:flex-start; gap:var(--space-1);">
+                        <label>Reagent Cost</label>
+                        <div class="gate-value" id="upgrade-reagent" style="color:var(--gold);">—</div>
+                    </div>
+                </div>
+
+                <label style="margin-bottom:var(--space-3);">Narrative Gate Conditions</label>
+
+                <div class="gate-row">
+                    <label>Reagent Cost Amassed</label>
+                    <div class="gate-value">
+                        <input type="number" id="gate-gp" value="0" min="0" placeholder="0" onchange="checkGates()" style="width:100px; margin:0;">
+                        <span style="color:var(--muted); font-size:0.85em; margin-left:8px;">gp available</span>
+                    </div>
+                    <div class="gate-status unknown" id="gate-gp-status">—</div>
+                </div>
+
+                <div class="gate-row">
+                    <label>Time Since Last Upgrade</label>
+                    <div class="gate-value">
+                        <input type="number" id="gate-hours" value="0" min="0" placeholder="0" onchange="checkGates()" style="width:100px; margin:0;">
+                        <span style="color:var(--muted); font-size:0.85em; margin-left:8px;">hours elapsed</span>
+                    </div>
+                    <div class="gate-status unknown" id="gate-time-status">—</div>
+                </div>
+
+                <div id="gates-met-note" style="display:none; margin-top:var(--space-3); font-size:0.85em; color:var(--green); font-style:italic;">
+                    ✓ Both gates met — upgrade can proceed.
+                </div>
+            </div>
+        </div><!-- /control-panel -->
+
+        <!-- ── THE ROLL ── -->
+        <div id="upgrade-roll-section" style="display:none;">
+            <h2>Resolve the Upgrade</h2>
+            <div class="setup-grid">
+                <div>
+                    <label>Crafter's Roll (d20 + mod)</label>
+                    <input type="number" id="upgrade-roll" placeholder="e.g. 17" min="1" max="30">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-primary" style="width:100%;" onclick="resolveUpgrade()">Resolve Upgrade</button>
+                </div>
+            </div>
+
+            <div id="upgrade-result" class="result-card"></div>
+        </div>
+
+    </div><!-- /tab-upgrades -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB 2: SOCKETING
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="tab-socketing" class="forge-section">
+
+        <!-- Rules summary -->
+        <div class="socket-info-grid">
+            <div class="socket-panel">
+                <h3>Attaching a Socketable</h3>
+                <div class="socket-rule">
+                    Takes <strong>1 hour</strong> and requires proficiency in one of: Carpenter's, Cobbler's, Glassblower's, Leatherworker's, Smith's, Tinker's, Weaver's, or Woodcarver's tools.<br><br>
+                    All items of <strong>Common rarity or higher</strong> have 1 socket. Some socketables require the host item to be attuneable.
+                </div>
+            </div>
+            <div class="socket-panel">
+                <h3>Removing a Socketable</h3>
+                <div class="socket-rule">
+                    Requires the same tool proficiency.<br><br>
+                    Roll a <strong>DC 10</strong> Dexterity or Intelligence check using the tool. On a failure, the socketable item is <strong>destroyed</strong>. The host item is unaffected.
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+
+            <!-- Search socketable items -->
+            <div>
+                <label>Search Socketable Items</label>
+                <input type="text" id="socket-search" placeholder="Search by name…"
+                       oninput="searchSocketables()" autocomplete="off">
+            </div>
+
+            <div id="socketable-list" class="socketable-list" style="margin-top:var(--space-3);"></div>
+
+            <!-- Selected item detail -->
+            <div id="socketable-detail" class="socketable-detail">
+                <div class="detail-name" id="sd-name"></div>
+                <div class="detail-tags" id="sd-tags"></div>
+                <div class="detail-stats" id="sd-stats"></div>
+            </div>
+
+        </div><!-- /control-panel -->
+
+        <!-- ── REMOVAL ROLL ── -->
+        <div style="margin-top:var(--space-6);">
+            <h2>Resolve Removal</h2>
+            <p style="font-size:0.88em; color:var(--muted); margin-bottom:var(--space-4);">
+                DC 10 Dex or Int check with appropriate tool proficiency. Failure destroys the socketable.
+            </p>
+            <div class="setup-grid">
+                <div>
+                    <label>Crafter's Roll (d20 + mod)</label>
+                    <input type="number" id="socket-removal-roll" placeholder="e.g. 12" min="1" max="30">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-primary" style="width:100%;" onclick="resolveRemoval()">Resolve Removal</button>
+                </div>
+            </div>
+            <div id="removal-result" class="removal-result"></div>
+        </div>
+
+    </div><!-- /tab-socketing -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB 3: SALVAGING
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="tab-salvaging" class="forge-section">
+
+        <div class="control-panel">
+            <div class="setup-grid">
+                <div>
+                    <label>Item to Salvage</label>
+                    <input type="text" id="salvage-search" placeholder="Search item name…"
+                           oninput="searchSalvageable()" autocomplete="off">
+                    <div id="salvage-search-results" style="display:none; margin-top:var(--space-2); background:var(--depth-inset); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); overflow:hidden;"></div>
+                </div>
+                <div>
+                    <label>Item Rarity</label>
+                    <select id="salvage-rarity" onchange="updateSalvageCalc()">
+                        <option value="">— Select —</option>
+                        <option value="Mundane">Mundane</option>
+                        <option value="Common">Common</option>
+                        <option value="Uncommon">Uncommon</option>
+                        <option value="Rare">Rare</option>
+                        <option value="Very Rare">Very Rare</option>
+                        <option value="Legendary">Legendary</option>
+                        <option value="Artifact">Artifact</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Salvage type -->
+            <div style="margin-top:var(--space-4);">
+                <label>Salvage Type</label>
+                <div style="display:flex; gap:var(--space-3); margin-top:var(--space-2);">
+                    <label class="checkbox-label" style="background:none; border:none; padding:0; gap:var(--space-2);">
+                        <input type="radio" name="salvage-type" value="mundane" checked onchange="updateSalvageCalc()"> Mundane Item
+                    </label>
+                    <label class="checkbox-label" style="background:none; border:none; padding:0; gap:var(--space-2);">
+                        <input type="radio" name="salvage-type" value="magical" onchange="updateSalvageCalc()"> Magical Item
+                    </label>
+                </div>
+            </div>
+
+            <!-- Item value (for mundane) -->
+            <div id="salvage-value-row" style="margin-top:var(--space-4);">
+                <label>Item Value (gp)</label>
+                <input type="number" id="salvage-item-value" placeholder="e.g. 200" min="0" oninput="updateSalvageCalc()">
+            </div>
+
+            <!-- Salvage results -->
+            <div id="salvage-stats" style="display:none; margin-top:var(--space-5);">
+                <div class="salvage-time-box">
+                    <div class="salvage-time-label">Time to Salvage</div>
+                    <div class="salvage-time-value" id="salvage-time-value">—</div>
+                </div>
+                <div id="salvage-magical-info" style="display:none;">
+                    <div class="gate-row" style="margin-bottom:var(--space-2);">
+                        <label>Required DC</label>
+                        <div class="gate-value" id="salvage-dc" style="font-size:1.1em; color:var(--gold); font-weight:bold;">—</div>
+                    </div>
+                    <div class="gate-row">
+                        <label>Success</label>
+                        <div class="gate-value" style="color:var(--green); font-size:0.9em;" id="salvage-success-text">—</div>
+                    </div>
+                    <div class="gate-row">
+                        <label>Failure</label>
+                        <div class="gate-value" style="color:var(--red); font-size:0.9em;" id="salvage-fail-text">—</div>
+                    </div>
+                </div>
+                <div id="salvage-mundane-info" style="display:none;">
+                    <div class="gate-row">
+                        <label>Materials Recovered</label>
+                        <div class="gate-value" id="salvage-materials" style="color:var(--gold);">—</div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /control-panel -->
+
+        <!-- ── APL + VARIABLE STATS ── -->
+        <div id="salvage-apl-section" style="display:none;">
+            <h2>Variable Statistics (Explosion Damage)</h2>
+            <p style="font-size:0.88em; color:var(--muted); margin-bottom:var(--space-4);">
+                On a failed salvage of a magical item, the enchanter and all creatures within 10 ft take Vdam force damage. Select the party's APL:
+            </p>
+
+            <div class="apl-grid" id="apl-grid"></div>
+
+            <div id="vstat-display" style="display:none;">
+                <div class="vstat-row">
+                    <div class="vstat-box">
+                        <div class="vstat-label">VDC</div>
+                        <div class="vstat-value" id="vstat-vdc">—</div>
+                    </div>
+                    <div class="vstat-box">
+                        <div class="vstat-label">Vmod</div>
+                        <div class="vstat-value" id="vstat-vmod">—</div>
+                    </div>
+                    <div class="vstat-box">
+                        <div class="vstat-label">Vdam (Explosion)</div>
+                        <div class="vstat-value" id="vstat-vdam">—</div>
+                    </div>
+                </div>
+                <div style="font-size:0.8em; color:var(--muted); font-style:italic;">
+                    Force damage dealt to the enchanter and all creatures within 10 ft on salvage failure.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SALVAGE ROLL (magical only) ── -->
+        <div id="salvage-roll-section" style="display:none; margin-top:var(--space-6);">
+            <h2>Resolve the Salvage</h2>
+            <div class="setup-grid">
+                <div>
+                    <label>Crafter's Spellcasting Roll (d20 + mod)</label>
+                    <input type="number" id="salvage-roll" placeholder="e.g. 14" min="1" max="30">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-primary" style="width:100%;" onclick="resolveSalvage()">Resolve Salvage</button>
+                </div>
+            </div>
+            <div id="salvage-result" class="result-card"></div>
+        </div>
+
+    </div><!-- /tab-salvaging -->
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+
+const RARITY_ORDER = ["Mundane","Common","Uncommon","Rare","Very Rare","Legendary","Artifact"];
+
+const ENCHANTING_TABLE = {
+    Common:     { dc: 12, consumable: 0.5, nonAtt: 1,      att: 2       },
+    Uncommon:   { dc: 15, consumable: 4,   nonAtt: 10,     att: 20      },
+    Rare:       { dc: 18, consumable: 20,  nonAtt: 40,     att: 80      },
+    "Very Rare":{ dc: 21, consumable: 80,  nonAtt: 160,    att: 320     },
+    Legendary:  { dc: 25, consumable: 320, nonAtt: 640,    att: 1280    },
+    Artifact:   { dc: 30, consumable: 50000, nonAtt:100000,att: 200000  }
+};
+
+const REAGENT_COSTS = {
+    Common: 25, Uncommon: 100, Rare: 500, "Very Rare": 2500, Legendary: 10000, Artifact: 160000
+};
+
+const ESSENCE_NAMES = {
+    Common: "Common Essence", Uncommon: "Uncommon Essence", Rare: "Rare Essence",
+    "Very Rare": "Very Rare Essence", Legendary: "Legendary Essence", Artifact: "Artifact Essence"
+};
+
+// recipeData is an object keyed by item name.
+// Upgrade chains are identified by shared base name: "Breastplank (Uncommon)", "Breastplank (Rare)" etc.
+
+function getBaseName(name) {
+    // Strip trailing " (Rarity)" suffix to get the root item name
+    return name.replace(/\s*\((Common|Uncommon|Rare|Very Rare|Legendary|Artifact)\)\s*$/, '').trim();
+}
+
+function recipeEntries() {
+    if (typeof recipeData === 'undefined') return [];
+    return Object.entries(recipeData).map(([name, data]) => ({ name, ...data }));
+}
+
+// All items that are part of a rarity chain (have at least one sibling with same base name)
+function getUpgradeableItems() {
+    const entries = recipeEntries();
+    // Count how many items share each base name
+    const baseCounts = {};
+    entries.forEach(item => {
+        const base = getBaseName(item.name);
+        baseCounts[base] = (baseCounts[base] || 0) + 1;
+    });
+    // Items in a chain: base name appears more than once
+    return entries.filter(item => baseCounts[getBaseName(item.name)] > 1);
+}
+
+// Get all items in the same chain as itemName, sorted by rarity
+function getUpgradeChain(itemName) {
+    const base = getBaseName(itemName);
+    const entries = recipeEntries();
+    const chainItems = entries.filter(item => getBaseName(item.name) === base);
+    chainItems.sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity));
+    return chainItems;
+}
+
+function formatTime(hours) {
+    if (hours === 0) return "0 hours";
+    if (hours < 1) return `${hours * 60} minutes`;
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    const days = hours / 8; // working days (8h)
+    if (hours < 168) return `${hours}h (${days.toFixed(1)} working days)`;
+    const weeks = days / 5;
+    return `${hours}h (${weeks.toFixed(1)} working weeks)`;
+}
+
+function rarityClass(rarity) {
+    return 'rarity-' + (rarity || 'common').toLowerCase().replace(' ', '-');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════════════
+
+function switchTab(tab) {
+    document.querySelectorAll('.forge-tab').forEach((btn, i) => {
+        const tabs = ['upgrades','socketing','salvaging'];
+        btn.classList.toggle('active', tabs[i] === tab);
+    });
+    document.querySelectorAll('.forge-section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UPGRADES TAB
+// ══════════════════════════════════════════════════════════════════
+
+let selectedUpgradeItem = null;
+
+function searchUpgradeable() {
+    selectedUpgradeItem = null; // clear previous selection on new search
+    const q = document.getElementById('upgrade-search').value.trim().toLowerCase();
+    const results = document.getElementById('upgrade-search-results');
+    if (q.length < 2) { results.style.display = 'none'; return; }
+
+    const items = getUpgradeableItems().filter(i => i.name.toLowerCase().includes(q));
+    if (!items.length) { results.style.display = 'none'; return; }
+
+    results.innerHTML = items.slice(0, 8).map(i => `
+        <div onclick="selectUpgradeItem('${i.name.replace(/'/g,"\\'")}','${i.rarity}')"
+             style="padding:8px 14px; cursor:pointer; font-size:0.88em; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;"
+             onmouseover="this.style.background='rgba(46,204,113,0.06)'"
+             onmouseout="this.style.background='transparent'">
+            <span>${i.name}</span>
+            <span class="socketable-rarity ${rarityClass(i.rarity)}">${i.rarity}</span>
+        </div>
+    `).join('');
+    results.style.display = 'block';
+}
+
+function selectUpgradeItem(name, rarity) {
+    selectedUpgradeItem = name;
+    document.getElementById('upgrade-search').value = name;
+    document.getElementById('upgrade-search-results').style.display = 'none';
+    document.getElementById('upgrade-current-rarity').value = rarity;
+    buildChain();
+}
+
+function buildChain() {
+    const itemName = selectedUpgradeItem || document.getElementById('upgrade-search').value.trim();
+    const currentRarity = document.getElementById('upgrade-current-rarity').value;
+    if (!itemName || !currentRarity) return;
+
+    const chainItems = getUpgradeChain(itemName);
+    const chainWrap = document.getElementById('upgrade-chain-wrap');
+    const chainEl = document.getElementById('upgrade-chain');
+    const targetInfo = document.getElementById('upgrade-target-info');
+    const rollSection = document.getElementById('upgrade-roll-section');
+
+    if (!chainItems.length) {
+        chainWrap.style.display = 'none';
+        targetInfo.style.display = 'none';
+        rollSection.style.display = 'none';
+        return;
+    }
+
+    chainWrap.style.display = 'block';
+
+    const curRarityIdx = RARITY_ORDER.indexOf(currentRarity);
+    const curIdx = chainItems.findIndex(i => i.rarity === currentRarity);
+
+    // Current rarity exists in chain — exact match
+    // Current rarity NOT in chain — it's below (or between) chain entries
+    //   e.g. "Mundane" for a chain starting at Uncommon, or "Rare" for a chain
+    //   that jumps Uncommon → Very Rare. Find the first chain entry above it.
+    let targetItem = null;
+
+    if (curIdx >= 0) {
+        // Exact match: target is the next item in the chain
+        targetItem = chainItems[curIdx + 1] || null;
+
+        chainEl.innerHTML = chainItems.map((item, idx) => {
+            let cls = 'future';
+            if (idx === curIdx) cls = 'current';
+            else if (targetItem && idx === curIdx + 1) cls = 'target';
+            const arrow = idx < chainItems.length - 1 ? '<span class="chain-arrow">›</span>' : '';
+            return `<span class="rarity-node ${cls}" title="${item.name}">${item.rarity}</span>${arrow}`;
+        }).join('');
+    } else {
+        // Current rarity is not in the chain — show it as a virtual "current" node
+        // Target is the first chain item whose rarity is above the selected one
+        const targetIdx = chainItems.findIndex(i => RARITY_ORDER.indexOf(i.rarity) > curRarityIdx);
+        targetItem = targetIdx >= 0 ? chainItems[targetIdx] : null;
+
+        // Build: [virtual current] → [chain items with target highlighted]
+        let html = `<span class="rarity-node current" title="Current (no recipe)">${currentRarity}</span>`;
+        html += '<span class="chain-arrow">›</span>';
+        html += chainItems.map((item, idx) => {
+            let cls = 'future';
+            if (targetItem && item.name === targetItem.name) cls = 'target';
+            const arrow = idx < chainItems.length - 1 ? '<span class="chain-arrow">›</span>' : '';
+            return `<span class="rarity-node ${cls}" title="${item.name}">${item.rarity}</span>${arrow}`;
+        }).join('');
+        chainEl.innerHTML = html;
+    }
+
+    if (!targetItem) {
+        targetInfo.style.display = 'none';
+        rollSection.style.display = 'none';
+        chainEl.innerHTML += ' <span style="color:var(--muted); font-size:0.8em; font-style:italic; margin-left:8px;">— Max rarity reached</span>';
+        return;
+    }
+
+    const tbl = ENCHANTING_TABLE[targetItem.rarity];
+    if (!tbl) {
+        targetInfo.style.display = 'none';
+        rollSection.style.display = 'none';
+        return;
+    }
+
+    const craftTime = targetItem.attunement && targetItem.attunement !== "No"
+        ? tbl.att : tbl.nonAtt;
+    const reagentCost = REAGENT_COSTS[targetItem.rarity] || '—';
+
+    document.getElementById('upgrade-dc').textContent     = tbl.dc;
+    document.getElementById('upgrade-time').textContent   = formatTime(craftTime);
+    document.getElementById('upgrade-reagent').textContent = `${reagentCost.toLocaleString()} gp`;
+
+    targetInfo.style.display = 'block';
+    rollSection.style.display = 'block';
+
+    // Store for gate checking
+    targetInfo.dataset.dc        = tbl.dc;
+    targetInfo.dataset.reagent   = reagentCost;
+    targetInfo.dataset.time      = craftTime;
+    targetInfo.dataset.targetRarity = targetItem.rarity;
+    targetInfo.dataset.targetName   = targetItem.name;
+
+    checkGates();
+}
+
+function checkGates() {
+    const info = document.getElementById('upgrade-target-info');
+    if (!info.dataset.reagent) return;
+
+    const reagentNeeded = parseFloat(info.dataset.reagent);
+    const timeNeeded    = parseFloat(info.dataset.time);
+    const gpHave   = parseFloat(document.getElementById('gate-gp').value) || 0;
+    const hoursElapsed = parseFloat(document.getElementById('gate-hours').value) || 0;
+
+    const gpStatus   = document.getElementById('gate-gp-status');
+    const timeStatus = document.getElementById('gate-time-status');
+    const note       = document.getElementById('gates-met-note');
+
+    if (gpHave >= reagentNeeded) {
+        gpStatus.textContent = 'Met';
+        gpStatus.className = 'gate-status met';
+    } else {
+        gpStatus.textContent = `Need ${(reagentNeeded - gpHave).toLocaleString()} more gp`;
+        gpStatus.className = 'gate-status unmet';
+    }
+
+    if (hoursElapsed >= timeNeeded) {
+        timeStatus.textContent = 'Met';
+        timeStatus.className = 'gate-status met';
+    } else {
+        const remaining = timeNeeded - hoursElapsed;
+        timeStatus.textContent = `${formatTime(remaining)} remaining`;
+        timeStatus.className = 'gate-status unmet';
+    }
+
+    const bothMet = gpHave >= reagentNeeded && hoursElapsed >= timeNeeded;
+    note.style.display = bothMet ? 'block' : 'none';
+}
+
+function resolveUpgrade() {
+    const info = document.getElementById('upgrade-target-info');
+    const roll = parseInt(document.getElementById('upgrade-roll').value);
+    const dc   = parseInt(info.dataset.dc);
+    const targetRarity = info.dataset.targetRarity;
+    const targetName   = info.dataset.targetName;
+    const result = document.getElementById('upgrade-result');
+
+    if (!roll || !dc) {
+        alert('Enter the crafter\'s roll first.');
+        return;
+    }
+
+    // Soft gate check — warn but don't block (DM override)
+    const reagentNeeded = parseFloat(info.dataset.reagent) || 0;
+    const timeNeeded    = parseFloat(info.dataset.time) || 0;
+    const gpHave        = parseFloat(document.getElementById('gate-gp').value) || 0;
+    const hoursElapsed  = parseFloat(document.getElementById('gate-hours').value) || 0;
+    const gatesMet      = gpHave >= reagentNeeded && hoursElapsed >= timeNeeded;
+
+    let gateWarning = '';
+    if (!gatesMet) {
+        gateWarning = `<p style="color:var(--muted); font-size:0.82em; font-style:italic; margin-top:var(--space-3); padding-top:var(--space-3); border-top:1px dashed var(--border-subtle);">⚠ Note: Narrative gate conditions were not fully met when this roll was resolved.</p>`;
+    }
+
+    result.className = 'result-card visible';
+
+    if (roll >= dc + 10) {
+        // Critical success
+        result.classList.add('critical');
+        result.innerHTML = `
+            <div class="result-header">⭐ Critical Success! (Roll ${roll} vs DC ${dc})</div>
+            <p>The upgrade succeeds brilliantly. The item becomes <strong>${targetName}</strong> (${targetRarity}).</p>
+            <p style="color:var(--gold); font-size:0.88em;">Exceeded DC by 10 or more — the DM may grant a bonus boon, quirk, or cosmetic enhancement to the item.</p>
+            ${gateWarning}
+        `;
+    } else if (roll >= dc) {
+        // Success
+        result.classList.add('success');
+        result.innerHTML = `
+            <div class="result-header">✓ Success (Roll ${roll} vs DC ${dc})</div>
+            <p>The upgrade succeeds. The item becomes <strong>${targetName}</strong> (${targetRarity}).</p>
+            <p style="color:var(--muted); font-size:0.85em;">The essence is consumed. The item is now magical at the new rarity.</p>
+            ${gateWarning}
+        `;
+    } else {
+        // Failure
+        result.classList.add('failure');
+        result.innerHTML = `
+            <div class="result-header">✗ Failure (Roll ${roll} vs DC ${dc})</div>
+            <p>The upgrade fails. The essence is wasted and destroyed.</p>
+            <p style="color:var(--muted); font-size:0.85em;">The base item remains unchanged at its current rarity. The reagent cost must be gathered again before another attempt.</p>
+            ${gateWarning}
+        `;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SOCKETING TAB
+// ══════════════════════════════════════════════════════════════════
+
+let selectedSocketable = null;
+
+function getSocketableItems() {
+    return recipeEntries().filter(i => i.socketable === true);
+}
+
+function searchSocketables() {
+    const q = document.getElementById('socket-search').value.trim().toLowerCase();
+    const list = document.getElementById('socketable-list');
+    const items = getSocketableItems().filter(i =>
+        !q || i.name.toLowerCase().includes(q)
+    );
+
+    if (!items.length) {
+        list.innerHTML = '<div style="color:var(--muted); font-size:0.85em; padding:var(--space-3);">No socketable items found.</div>';
+        return;
+    }
+
+    list.innerHTML = items.map(i => `
+        <div class="socketable-item ${selectedSocketable?.name === i.name ? 'selected' : ''}"
+             onclick="selectSocketable('${i.name.replace(/'/g,"\\'")}')">
+            <div>
+                <div class="socketable-name">${i.name}</div>
+                <div class="socketable-meta">${i.attunement !== 'No' ? 'Requires Attunement' : 'No Attunement'}</div>
+            </div>
+            <span class="socketable-rarity ${rarityClass(i.rarity)}">${i.rarity}</span>
+        </div>
+    `).join('');
+}
+
+function selectSocketable(name) {
+    selectedSocketable = recipeEntries().find(i => i.name === name && i.socketable);
+    if (!selectedSocketable) return;
+
+    searchSocketables(); // re-render to update selected state
+
+    const detail = document.getElementById('socketable-detail');
+    detail.className = 'socketable-detail visible';
+
+    document.getElementById('sd-name').textContent = selectedSocketable.name;
+
+    const tags = [];
+    tags.push(selectedSocketable.rarity);
+    tags.push('Socketable');
+    if (selectedSocketable.attunement !== 'No') tags.push('Requires Attunement');
+    if (selectedSocketable.type) tags.push(selectedSocketable.type);
+
+    document.getElementById('sd-tags').innerHTML = tags.map(t =>
+        `<span class="detail-tag ${t === selectedSocketable.rarity ? rarityClass(t) : ''}">${t}</span>`
+    ).join('');
+
+    document.getElementById('sd-stats').innerHTML =
+        (selectedSocketable.stats || '<em style="color:var(--muted)">No stat description available.</em>');
+}
+
+function resolveRemoval() {
+    const roll = parseInt(document.getElementById('socket-removal-roll').value);
+    const result = document.getElementById('removal-result');
+    const DC = 10;
+
+    if (!roll) { alert('Enter the removal roll first.'); return; }
+
+    result.className = 'removal-result visible';
+
+    if (roll >= DC) {
+        result.classList.add('success');
+        const itemNote = selectedSocketable ? `<strong>${selectedSocketable.name}</strong> is safely removed.` : 'The socketable item is safely removed.';
+        result.innerHTML = `✓ Success (Roll ${roll} vs DC ${DC}) — ${itemNote} Both the host item and socketable are intact.`;
+    } else {
+        result.classList.add('failure');
+        const itemNote = selectedSocketable ? `<strong>${selectedSocketable.name}</strong> is destroyed.` : 'The socketable item is destroyed.';
+        result.innerHTML = `✗ Failure (Roll ${roll} vs DC ${DC}) — ${itemNote} The host item is unaffected.`;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SALVAGING TAB
+// ══════════════════════════════════════════════════════════════════
+
+let selectedApl = null;
+
+function buildAplGrid() {
+    const grid = document.getElementById('apl-grid');
+    if (!grid || typeof variableStats === 'undefined') return;
+
+    grid.innerHTML = variableStats.map(row => `
+        <button class="apl-btn ${selectedApl === row.aplMin ? 'active' : ''}"
+                onclick="selectApl(${row.aplMin})">
+            APL ${row.aplMin}${row.aplMin !== row.aplMax ? '–' + row.aplMax : ''}
+            <span>VDC ${row.vdc} · Vdam ${row.vdamDice}</span>
+        </button>
+    `).join('');
+}
+
+function selectApl(apl) {
+    selectedApl = apl;
+    buildAplGrid();
+
+    if (typeof variableStats === 'undefined') return;
+    const row = variableStats.find(r => apl >= r.aplMin && apl <= r.aplMax);
+    if (!row) return;
+
+    document.getElementById('vstat-display').style.display = 'block';
+    document.getElementById('vstat-vdc').textContent  = row.vdc;
+    document.getElementById('vstat-vmod').textContent = `+${row.vmod}`;
+    document.getElementById('vstat-vdam').textContent = `${row.vdamFlat} (${row.vdamDice})`;
+}
+
+function updateSalvageCalc() {
+    const rarity  = document.getElementById('salvage-rarity').value;
+    const type    = document.querySelector('input[name="salvage-type"]:checked')?.value;
+    const isMagic = type === 'magical';
+
+    document.getElementById('salvage-value-row').style.display  = isMagic ? 'none' : 'block';
+    document.getElementById('salvage-magical-info').style.display = isMagic ? 'block' : 'none';
+    document.getElementById('salvage-mundane-info').style.display = !isMagic ? 'block' : 'none';
+    document.getElementById('salvage-apl-section').style.display = isMagic ? 'block' : 'none';
+    document.getElementById('salvage-roll-section').style.display = isMagic ? 'block' : 'none';
+
+    if (!rarity) { document.getElementById('salvage-stats').style.display = 'none'; return; }
+
+    document.getElementById('salvage-stats').style.display = 'block';
+
+    const tbl = ENCHANTING_TABLE[rarity];
+
+    if (isMagic) {
+        if (!tbl) return;
+        // Salvage time = 1/10th enchanting time (use non-att as default)
+        const baseTime = tbl.nonAtt;
+        const salvageTime = baseTime / 10;
+        document.getElementById('salvage-time-value').textContent = formatTime(salvageTime);
+        document.getElementById('salvage-dc').textContent = tbl.dc;
+        document.getElementById('salvage-success-text').textContent =
+            `${ESSENCE_NAMES[rarity] || rarity + ' Essence'} recovered. Item becomes nonmagical.`;
+        document.getElementById('salvage-fail-text').textContent =
+            `Explosion — Vdam force damage to enchanter and all within 10 ft. Item becomes nonmagical.`;
+    } else {
+        // Mundane: 1/6th of item value in materials
+        const itemValue = parseFloat(document.getElementById('salvage-item-value').value) || 0;
+        const recovered = itemValue / 6;
+
+        // Rough time estimate: proportional to rarity (no official table, use 1/10th of common nonAtt as baseline)
+        const rarityTimes = { Mundane: 0.5, Common: 0.1, Uncommon: 1, Rare: 4, "Very Rare": 16, Legendary: 64, Artifact: 10000 };
+        const salvageTime = rarityTimes[rarity] || 1;
+
+        document.getElementById('salvage-time-value').textContent = formatTime(salvageTime);
+        document.getElementById('salvage-materials').textContent =
+            recovered > 0 ? `${recovered.toLocaleString(undefined,{maximumFractionDigits:1})} gp in raw materials` : 'Enter item value above';
+    }
+
+    if (isMagic) buildAplGrid();
+}
+
+function searchSalvageable() {
+    const q = document.getElementById('salvage-search').value.trim().toLowerCase();
+    const results = document.getElementById('salvage-search-results');
+    if (q.length < 2) { results.style.display = 'none'; return; }
+    const items = recipeEntries().filter(i => i.name.toLowerCase().includes(q) && i.rarity && i.rarity !== 'Mundane');
+    if (!items.length) { results.style.display = 'none'; return; }
+
+    results.innerHTML = items.slice(0, 8).map(i => `
+        <div onclick="selectSalvageable('${i.name.replace(/'/g,"\\'")}','${i.rarity}')"
+             style="padding:8px 14px; cursor:pointer; font-size:0.88em; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;"
+             onmouseover="this.style.background='rgba(46,204,113,0.06)'"
+             onmouseout="this.style.background='transparent'">
+            <span>${i.name}</span>
+            <span class="socketable-rarity ${rarityClass(i.rarity)}">${i.rarity}</span>
+        </div>
+    `).join('');
+    results.style.display = 'block';
+}
+
+function selectSalvageable(name, rarity) {
+    document.getElementById('salvage-search').value = name;
+    document.getElementById('salvage-search-results').style.display = 'none';
+    document.getElementById('salvage-rarity').value = rarity;
+    updateSalvageCalc();
+}
+
+function resolveSalvage() {
+    const rarity = document.getElementById('salvage-rarity').value;
+    const roll   = parseInt(document.getElementById('salvage-roll').value);
+    const tbl    = ENCHANTING_TABLE[rarity];
+    const result = document.getElementById('salvage-result');
+
+    if (!roll || !tbl) { alert('Enter rarity and roll first.'); return; }
+
+    const dc = tbl.dc;
+    result.className = 'result-card visible';
+
+    if (roll >= dc) {
+        result.classList.add('success');
+        result.innerHTML = `
+            <div class="result-header">✓ Success (Roll ${roll} vs DC ${dc})</div>
+            <p>${ESSENCE_NAMES[rarity] || rarity + ' Essence'} successfully extracted.</p>
+            <p style="color:var(--muted); font-size:0.85em;">The item becomes nonmagical but is otherwise undamaged.</p>
+        `;
+    } else {
+        const aplRow = selectedApl !== null
+            ? variableStats?.find(r => selectedApl >= r.aplMin && selectedApl <= r.aplMax)
+            : null;
+        const vdamText = aplRow
+            ? `<strong style="color:var(--red);">${aplRow.vdamFlat} (${aplRow.vdamDice})</strong> force damage`
+            : '<strong style="color:var(--red);">Vdam</strong> force damage (set APL above)';
+
+        result.classList.add('failure');
+        result.innerHTML = `
+            <div class="result-header">✗ Failure — Explosion! (Roll ${roll} vs DC ${dc})</div>
+            <p>The salvage fails catastrophically. The enchanter and all creatures within <strong>10 feet</strong> take ${vdamText}.</p>
+            <p style="color:var(--muted); font-size:0.85em;">The item becomes nonmagical. No essence is recovered.</p>
+        `;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════════════════
+
+function resetAll() {
+    location.reload();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+    searchSocketables(); // populate full socketable list on load
+    buildAplGrid();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1438 @@
+/* ============================================================
+   HELIANA'S GUIDE — SUITE.CSS
+   Shared design system. All modules link here.
+   No module should duplicate anything defined below.
+   Last updated: v1.0
+   ============================================================ */
+
+/* ── 0. GOOGLE FONTS ─────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+
+/* ── 1. DESIGN TOKENS ───────────────────────────────────────────────────── */
+:root {
+    /* Primary colours */
+    --green:            #2ecc71;  /* DM suite identity — interactive, active, success */
+    --gold:             #d4af37;  /* Player suite identity — headings, value, accent   */
+
+    /* Semantic colours — one job each, used nowhere else */
+    --blue:             #3498db;  /* Mode / state switching only                        */
+    --red:              #e74c3c;  /* Danger, destructive actions, failure               */
+    --purple:           #9b59b6;  /* Tooltips and contextual help only                  */
+    --muted:            #888888;  /* Inactive text, disabled states, placeholders       */
+
+    /* Depth stack — darker = further back */
+    --depth-base:       #1a1a1a;  /* Page background                                    */
+    --depth-surface:    #252525;  /* Panels, cards, containers                          */
+    --depth-raised:     #2e2e2e;  /* Hover states, subtle elevation                     */
+    --depth-inset:      #111111;  /* Inputs, fields, recessed elements                  */
+    --depth-deep:       #0a0a0a;  /* Deepest recesses — raw export, code areas          */
+
+    /* Text */
+    --text:             #e0e0e0;  /* Primary body text                                  */
+    --text-dim:         #aaaaaa;  /* Secondary / supporting text                        */
+    --border:           #444444;  /* Default border                                     */
+    --border-subtle:    #333333;  /* Subtle dividers, inner borders                     */
+
+    /* Typography */
+    --font-display:     'Merriweather', serif;
+    --font-body:        'Lora', serif;
+
+    /* Spacing scale — multiples of 4px */
+    --space-1:          4px;
+    --space-2:          8px;
+    --space-3:          12px;
+    --space-4:          16px;
+    --space-5:          20px;
+    --space-6:          24px;
+    --space-7:          28px;
+    --space-8:          32px;
+    --space-10:         40px;
+
+    /* Border radius */
+    --radius-sm:        4px;   /* Badges, tags, small highlights       */
+    --radius-md:        6px;   /* Inputs, dropdowns, secondary buttons */
+    --radius-lg:        8px;   /* Panels, cards, control areas         */
+    --radius-pill:      20px;  /* Pill buttons — capsule shape         */
+    --radius-capsule:   12px;  /* Checkboxes / toggle capsules         */
+
+    /* Transitions */
+    --transition:       200ms ease;
+    --transition-slow:  300ms ease;
+}
+
+
+/* ── 2. RESET & BASE ────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--depth-base);
+    color: var(--text);
+    min-height: 100vh;
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    line-height: 1.2;
+}
+
+a { color: inherit; text-decoration: none; }
+
+
+/* ── 3. LAYOUT CONTAINERS ───────────────────────────────────────────────── */
+
+/* Main page wrapper */
+.container {
+    background-color: var(--depth-surface);
+    width: 100%;
+    max-width: 1200px;
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+/* Tighter container for player-facing tools */
+.container--narrow {
+    max-width: 1000px;
+}
+
+/* Control panel — the setup area where all inputs live */
+.control-panel {
+    background: var(--depth-base);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-6);
+    width: 100%;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Two-column workspace grid */
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+    width: 100%;
+}
+
+/* Two-column general grid */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    width: 100%;
+}
+
+/* Three-column grid for control inputs */
+.setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-5);
+}
+
+/* Inset panel — sits recessed within a surface */
+.panel {
+    background: var(--depth-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 1.05em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+/* Controls row — the strip of toggles/checkboxes beneath setup inputs */
+.controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: center;
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* Modifier pill row */
+.modifier-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: flex-start;
+    margin-top: var(--space-4);
+}
+
+
+/* ── 4. NAVIGATION ──────────────────────────────────────────────────────── */
+
+.nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-5);
+    width: 100%;
+}
+
+/* Back link fixed to top-left (used in dm/ and player/ sub-pages) */
+.nav-back {
+    position: fixed;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 100;
+}
+
+.nav-btn {
+    font-family: var(--font-body);
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    font-size: 0.8em;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition), background var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.nav-btn:hover {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(46, 204, 113, 0.05);
+}
+
+/* Player app nav button uses gold */
+.nav-btn--player:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+}
+
+
+/* ── 5. TYPOGRAPHY ──────────────────────────────────────────────────────── */
+
+.module-title {
+    font-family: var(--font-display);
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: center;
+    font-size: 2rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+    margin-bottom: var(--space-1);
+}
+
+/* Player app uses gold for module title */
+.module-title--player {
+    color: var(--gold);
+}
+
+.module-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1rem;
+    margin-bottom: var(--space-6);
+}
+
+/* Field labels above inputs */
+label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.85em;
+    font-weight: bold;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-2);
+}
+
+.skill-banner {
+    background: rgba(46, 204, 113, 0.08);
+    border-left: 3px solid var(--green);
+    padding: var(--space-4);
+    margin-bottom: var(--space-5);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.skill-banner__heading {
+    color: var(--gold);
+    font-size: 0.85em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--space-1);
+}
+
+.skill-banner__value {
+    color: var(--text);
+    font-size: 1.05em;
+}
+
+
+/* ── 6. INPUTS & DROPDOWNS ──────────────────────────────────────────────── */
+
+/* Base style shared by all native inputs */
+select,
+input[type="text"],
+input[type="number"] {
+    font-family: var(--font-body);
+    width: 100%;
+    padding: 11px var(--space-3);
+    background: var(--depth-inset);
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
+    border-radius: var(--radius-md);
+    font-size: 1em;
+    transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus {
+    outline: none;
+    border-color: rgba(46, 204, 113, 0.5);
+    box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.1);
+}
+
+/* Hide number spin arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* Select — styled native dropdown */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+    transition: border-color var(--transition-slow), box-shadow var(--transition-slow), background var(--transition-slow);
+}
+
+select:hover {
+    border-color: var(--border);
+    background-color: #141414;
+}
+
+select:focus {
+    border-color: rgba(46, 204, 113, 0.5);
+    box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.1), 0 4px 12px rgba(0,0,0,0.3);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232ecc71' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Native option panel styling (Webkit/Blink) */
+select option {
+    background: var(--depth-surface);
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: var(--font-body);
+}
+
+select option:checked {
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--green);
+}
+
+select option:hover,
+select option:focus {
+    background: rgba(46, 204, 113, 0.08);
+}
+
+/* Disabled option (placeholder) */
+select option[disabled] {
+    color: var(--muted);
+}
+
+/* Compact inputs used inline (helper rows etc.) */
+input.input--compact,
+select.input--compact {
+    padding: 8px var(--space-3);
+    font-size: 0.9em;
+}
+
+
+/* ── 7. CHECKBOXES ──────────────────────────────────────────────────────── */
+/* Capsule glow — no ticks, no crosses. Light on, dark off. */
+
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+    flex-shrink: 0;
+}
+
+/* Checkbox — round circle (matches radio style) */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    background: var(--depth-inset);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    margin: 0 var(--space-2) 0 0;
+}
+
+input[type="checkbox"]:checked {
+    background: rgba(46, 204, 113, 0.8);
+    border-color: var(--green);
+    box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+}
+
+/* No tick mark — state communicated by glow alone */
+input[type="checkbox"]::after { display: none; }
+
+/* Radio — rounded circle */
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    background: var(--depth-inset);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    margin: 0 var(--space-2) 0 0;
+}
+
+input[type="radio"]:checked {
+    background: rgba(46, 204, 113, 0.8);
+    border-color: var(--green);
+    box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+}
+
+input[type="radio"]::after { display: none; }
+
+/* Checkbox label wrapper */
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 10px var(--space-5);
+    border-radius: var(--radius-md);
+    transition: opacity var(--transition);
+    color: var(--text);
+    border: 1px solid transparent;
+    user-select: none;
+}
+
+.checkbox-label:hover { opacity: 0.85; }
+
+/* Destructive variant — red glow when checked */
+.cb-destructive {
+    background: rgba(231, 76, 60, 0.05);
+    border-color: rgba(231, 76, 60, 0.3);
+    color: var(--red);
+}
+
+.cb-destructive input[type="radio"]:checked {
+    background: rgba(231, 76, 60, 0.8);
+    border-color: var(--red);
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+/* Overkill / warning variant — gold glow when checked */
+.cb-overkill {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.3);
+    color: var(--gold);
+}
+
+.cb-overkill input[type="radio"]:checked {
+    background: rgba(212, 175, 55, 0.8);
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+/* Checkbox row container (player tools) */
+.checkbox-row {
+    display: flex;
+    gap: var(--space-5);
+    padding: var(--space-4);
+    background: var(--depth-base);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+
+/* ── 8. BUTTONS ─────────────────────────────────────────────────────────── */
+
+/* Primary action — the culmination button */
+.btn-primary {
+    font-family: var(--font-display);
+    background: var(--green);
+    color: var(--depth-inset);
+    border: none;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md);
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1em;
+    transition: opacity var(--transition-slow), background var(--transition-slow), color var(--transition-slow);
+    margin-bottom: var(--space-5);
+    display: block;
+}
+
+.btn-primary:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+/* Inactive state — dims until conditions met */
+.btn-primary:disabled,
+.btn-primary--inactive {
+    background: var(--depth-surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+/* Gold variant — used for second-phase actions (Execute Harvest) */
+.btn-primary--gold {
+    background: var(--gold);
+}
+
+/* Small action button — inline table actions */
+.btn-action {
+    font-family: var(--font-body);
+    background: var(--depth-raised);
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 5px var(--space-3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8em;
+    font-weight: bold;
+    transition: background var(--transition), color var(--transition);
+    width: 100%;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-action:hover {
+    background: var(--green);
+    color: var(--depth-inset);
+}
+
+/* Remove / destructive inline button */
+.btn-remove {
+    font-family: var(--font-body);
+    background: transparent;
+    color: var(--red);
+    border: none;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 var(--space-1);
+    line-height: 1;
+    transition: transform var(--transition), opacity var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove:hover {
+    transform: scale(1.2);
+    opacity: 0.8;
+}
+
+/* Freeze / lock toggle button (harvest table) */
+.btn-freeze {
+    font-family: var(--font-body);
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: border-color var(--transition), color var(--transition), background var(--transition);
+    width: 100%;
+    text-align: center;
+    line-height: 1;
+}
+
+.btn-freeze:hover {
+    border-color: var(--blue);
+    color: var(--text);
+}
+
+.btn-freeze.active {
+    background: rgba(52, 152, 219, 0.12);
+    border-color: var(--blue);
+    color: var(--blue);
+    box-shadow: inset 0 0 6px rgba(52, 152, 219, 0.2);
+}
+
+
+/* ── 9. PILL BUTTONS (FILTER / MODE) ────────────────────────────────────── */
+
+.pill-btn {
+    font-family: var(--font-body);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 18px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.pill-btn:hover {
+    background: rgba(46, 204, 113, 0.05);
+    border-color: rgba(46, 204, 113, 0.4);
+    color: var(--text);
+}
+
+.pill-btn.active {
+    background: rgba(46, 204, 113, 0.13);
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.2);
+}
+
+/* Recipe book / tab filter pills use gold */
+.pill-btn--gold:hover {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: var(--text);
+}
+
+.pill-btn--gold.active {
+    background: rgba(212, 175, 55, 0.13);
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
+}
+
+
+/* ── 10. MODE TOGGLE (TWO-STATE SWITCH) ─────────────────────────────────── */
+/* For binary mode switching — Pool List / Harvest List etc. */
+
+.toggle-container {
+    display: flex;
+    background: var(--depth-inset);
+    border: 1px solid var(--blue);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.toggle-btn {
+    font-family: var(--font-body);
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background var(--transition), color var(--transition);
+}
+
+.toggle-btn.active {
+    background: var(--blue);
+    color: var(--depth-inset);
+}
+
+.toggle-btn:hover:not(.active) {
+    color: var(--text);
+    background: rgba(52, 152, 219, 0.08);
+}
+
+
+/* ── 11. TABS (PLAYER TOOL) ─────────────────────────────────────────────── */
+
+.tab-container {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: var(--space-3);
+}
+
+.tab-btn {
+    font-family: var(--font-body);
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    font-size: 1em;
+    font-weight: bold;
+    padding: 10px var(--space-5);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color var(--transition);
+    border-bottom: 3px solid transparent;
+    position: relative;
+    bottom: -2px; /* Aligns active border with container border */
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.25s ease;
+    width: 100%;
+}
+
+.tab-content.active { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ── 12. TABLES ─────────────────────────────────────────────────────────── */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+th, td {
+    padding: 10px var(--space-1);
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: left;
+}
+
+th {
+    font-family: var(--font-body);
+    color: var(--green);
+    text-transform: uppercase;
+    font-size: 0.78em;
+    letter-spacing: 0.5px;
+    font-weight: bold;
+}
+
+/* Draggable row (harvest queue) */
+.drag-row {
+    cursor: grab;
+    transition: background var(--transition);
+}
+
+.drag-row:active { cursor: grabbing; }
+
+.drag-row.drag-over {
+    border-top: 2px solid var(--gold);
+}
+
+
+/* ── 13. OUTPUT AREAS ───────────────────────────────────────────────────── */
+
+/* Styled harvest / craft results */
+.styled-output {
+    background: var(--depth-inset);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin-bottom: var(--space-5);
+}
+
+.styled-output h2 {
+    color: var(--gold);
+    margin-top: 0;
+    border-bottom: 1px dashed var(--gold);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-5);
+    text-transform: uppercase;
+    font-size: 1.1em;
+}
+
+/* Individual result row */
+.out-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 1em;
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+}
+
+.out-item:last-child { border-bottom: none; }
+
+.out-status {
+    flex-shrink: 0;
+    width: 110px;
+    font-weight: bold;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+}
+
+.out-details {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.out-success { color: var(--green); }
+.out-fail    { color: var(--red); }
+
+/* Failed item row — left red border */
+.out-item--fail {
+    border-left: 3px solid var(--red);
+    padding-left: var(--space-3);
+}
+
+/* Raw export text area */
+.raw-export {
+    background: var(--depth-deep);
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    color: var(--blue);
+    font-family: monospace;
+    white-space: pre-wrap;
+    font-size: 0.9em;
+    line-height: 1.7;
+    outline: none;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+.raw-export:focus {
+    border-color: rgba(46, 204, 113, 0.4);
+    background: var(--depth-inset);
+}
+
+
+/* ── 14. CRAFT ITEM CARDS (QUADNOCULARS) ────────────────────────────────── */
+
+.craft-item {
+    background: rgba(155, 89, 182, 0.04);
+    border: 1px solid var(--border);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    transition: border-color var(--transition);
+}
+
+.craft-item:hover { border-color: rgba(155, 89, 182, 0.4); }
+
+.rarity-label {
+    font-size: 0.75em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: var(--space-1);
+    letter-spacing: 0.5px;
+}
+
+
+/* ── 15. TOOLTIPS ───────────────────────────────────────────────────────── */
+
+.global-tooltip {
+    position: fixed;
+    visibility: hidden;
+    opacity: 0;
+    width: 280px;
+    background-color: var(--depth-surface);
+    color: var(--text);
+    padding: var(--space-3);
+    z-index: 9999;
+    border: 1px solid var(--purple);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    font-size: 0.85em;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+    border-radius: var(--radius-md);
+    line-height: 1.5;
+}
+
+/* Element that triggers a tooltip on hover */
+.tooltip-trigger {
+    border-bottom: 1px dotted var(--purple);
+    cursor: help;
+    color: var(--text);
+    font-weight: bold;
+    transition: color var(--transition);
+}
+
+.tooltip-trigger:hover { color: var(--purple); }
+
+
+/* ── 16. BANNERS & STATUS ───────────────────────────────────────────────── */
+
+.warning-banner {
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid var(--red);
+    color: var(--text);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-5);
+    font-size: 0.9em;
+    display: none;
+    width: 100%;
+}
+
+.warning-banner strong { color: var(--red); }
+
+/* Harvest time display badge */
+.time-badge {
+    color: var(--gold);
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: var(--depth-inset);
+    padding: 10px var(--space-5);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--gold);
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.ruined-text {
+    color: var(--red);
+    font-style: italic;
+    font-size: 0.82em;
+    display: block;
+    margin-top: var(--space-1);
+}
+
+
+/* ── 17. MODALS ─────────────────────────────────────────────────────────── */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal-box {
+    background: var(--depth-inset);
+    border: 2px solid var(--gold);
+    padding: var(--space-10);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 550px;
+    width: 90%;
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
+}
+
+/* Synthesis modal */
+.synthesis-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 10001;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.synthesis-modal.active { display: flex; }
+
+.synth-box {
+    background: var(--depth-inset);
+    border: 2px solid var(--border);
+    padding: var(--space-10);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 550px;
+    width: 90%;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    transition: border-color var(--transition-slow), box-shadow var(--transition-slow);
+}
+
+.synth-box.success {
+    border-color: var(--gold);
+    box-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
+}
+
+.synth-box.failure {
+    border-color: var(--red);
+    box-shadow: 0 0 60px rgba(231, 76, 60, 0.25);
+}
+
+
+/* ── 18. WORKSHOP (PLAYER TOOL SPECIFIC) ────────────────────────────────── */
+
+.ws-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    width: 100%;
+}
+
+.ws-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.ws-box {
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    height: 180px;
+    overflow-y: auto;
+}
+
+.ws-box h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: 0.9em;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: var(--space-1);
+    position: sticky;
+    top: -16px;
+    background: #151515;
+    z-index: 2;
+}
+
+/* Scrollbar styling for ws-box */
+/* ws-box scrollbar — uses global style */
+
+.ws-item {
+    padding: 8px var(--space-3);
+    background: var(--depth-base);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    font-size: 0.88em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ws-item:hover {
+    border-color: var(--blue);
+    background: rgba(52, 152, 219, 0.07);
+}
+
+.ws-item.cooldown {
+    border-color: rgba(231, 76, 60, 0.4);
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ws-item.active-sel {
+    border-color: var(--gold);
+    background: rgba(212, 175, 55, 0.08);
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* Formula bar */
+.formula-bar {
+    background: var(--depth-deep);
+    border: 2px solid rgba(155, 89, 182, 0.5);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    align-items: center;
+}
+
+.formula-slot {
+    width: 100%;
+    text-align: center;
+    border: 1px dashed var(--border);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: 1em;
+    color: var(--muted);
+    background: var(--depth-inset);
+    transition: border-color var(--transition), box-shadow var(--transition), color var(--transition);
+}
+
+.formula-slot.filled   { border-style: solid; color: var(--text); }
+.formula-slot.t-blue   { border-color: var(--blue);   box-shadow: inset 0 0 10px rgba(52, 152, 219, 0.08); }
+.formula-slot.t-green  { border-color: var(--green);  box-shadow: inset 0 0 10px rgba(46, 204, 113, 0.08); }
+.formula-slot.t-gold   { border-color: var(--gold);   box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.08); }
+.formula-slot.t-red    { border-color: var(--red);    box-shadow: inset 0 0 10px rgba(231, 76, 60, 0.08); }
+
+.math-sym {
+    font-size: 1.4em;
+    color: var(--muted);
+    font-weight: bold;
+}
+
+/* Cooldown timer */
+.timer-text {
+    font-family: monospace;
+    font-size: 0.85em;
+    background: var(--depth-surface);
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    color: var(--red);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+
+/* ── 19. RECIPE BOOK (PLAYER TOOL SPECIFIC) ─────────────────────────────── */
+
+.rb-filters {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+}
+
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-5);
+}
+
+.recipe-card {
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    position: relative;
+    transition: border-color var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.recipe-card:hover { border-color: var(--gold); }
+
+.recipe-card h3 {
+    color: var(--gold);
+    margin: 0 0 var(--space-1) 0;
+    font-size: 1.1em;
+    padding-right: 90px; /* Safe zone for action buttons */
+    line-height: 1.3;
+}
+
+.recipe-actions {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    z-index: 10;
+}
+
+.pin-btn {
+    background: none;
+    border: none;
+    font-size: 1.1em;
+    cursor: pointer;
+    color: var(--border);
+    transition: color var(--transition);
+    padding: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.pin-btn:hover   { color: var(--muted); }
+.pin-btn.pinned  { color: var(--gold); filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4)); }
+
+.recipe-tags {
+    font-size: 0.78em;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-3);
+}
+
+.recipe-comp {
+    font-size: 0.88em;
+    color: var(--text);
+    margin-top: var(--space-3);
+    border-top: 1px dashed var(--border-subtle);
+    padding-top: var(--space-3);
+    flex-grow: 1;
+}
+
+
+/* ── 20. TOOL CARDS (PLAYER HARVEST SCANNER) ────────────────────────────── */
+
+.target-module {
+    background: var(--depth-inset);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--blue);
+    margin-bottom: var(--space-8);
+    text-align: center;
+}
+
+.tool-card {
+    background: #1c1c1c;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--transition-slow);
+}
+
+.tool-card h2 {
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    font-size: 1.05em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: #141414;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+}
+
+/* Mask overlay — covers the card until primed */
+.mask {
+    font-family: var(--font-body);
+    position: absolute;
+    top: 55px; left: 0; right: 0; bottom: 0;
+    background: var(--depth-inset);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.04);
+    z-index: 5;
+    transition: all 0.5s ease;
+    cursor: not-allowed;
+    font-size: 0.9em;
+}
+
+/* Ready — green pulse (book scan) */
+.tool-card.ready-green .mask {
+    background: var(--green);
+    color: var(--depth-inset);
+    cursor: pointer;
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+/* Ready — purple pulse (quad scan) */
+.tool-card.ready-purple .mask {
+    background: var(--purple);
+    color: var(--depth-inset);
+    cursor: pointer;
+    animation: pulse-purple 2s ease-in-out infinite;
+}
+
+@keyframes pulse-green  { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+@keyframes pulse-purple { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+
+/* Scanned — reveal content */
+.tool-card.scanned .mask    { opacity: 0; pointer-events: none; }
+.content                     { padding: var(--space-5); opacity: 0; transition: opacity 0.5s ease 0.25s; }
+.tool-card.scanned .content { opacity: 1; }
+
+/* Readiness container (dual-fill harvest button) */
+.readiness-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: var(--space-8);
+    background: #141414;
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Dual-fill harvest button */
+.dual-fill-btn {
+    position: relative;
+    overflow: hidden;
+    background: var(--depth-deep);
+    color: var(--border);
+    border: 2px solid var(--border-subtle);
+    padding: 18px var(--space-5);
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1em;
+    width: 100%;
+    max-width: 450px;
+    cursor: not-allowed;
+    transition: border-color var(--transition-slow), color var(--transition-slow);
+}
+
+.fill-left,
+.fill-right {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: var(--gold);
+    z-index: 1;
+    transition: clip-path 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    left: 0;
+}
+
+.fill-left  { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+.fill-right { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }
+
+.fill-left.active  { clip-path: polygon(0 0, calc(50% - 10px) 0, calc(50% + 20px) 100%, 0 100%); }
+.fill-right.active { clip-path: polygon(calc(50% - 20px) 0, 100% 0, 100% 100%, calc(50% + 10px) 100%); }
+
+.btn-text {
+    position: relative;
+    z-index: 2;
+    transition: color 0.4s ease;
+}
+
+.dual-fill-btn.ready {
+    border-color: var(--gold);
+    cursor: pointer;
+}
+
+.dual-fill-btn.ready .btn-text {
+    color: var(--depth-inset);
+    font-weight: 900;
+}
+
+
+/* ── 21. HELPER ROW ─────────────────────────────────────────────────────── */
+
+.helper-row {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.helper-row select,
+.helper-row input {
+    padding: 8px var(--space-3);
+    font-size: 0.88em;
+}
+
+
+/* ── 22. SCROLLBAR (GLOBAL) ─────────────────────────────────────────────── */
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+
+/* ── 23. UTILITY CLASSES ────────────────────────────────────────────────── */
+
+.text-green  { color: var(--green); }
+.text-gold   { color: var(--gold); }
+.text-red    { color: var(--red); }
+.text-blue   { color: var(--blue); }
+.text-purple { color: var(--purple); }
+.text-muted  { color: var(--muted); }
+
+.text-upper  { text-transform: uppercase; letter-spacing: 0.5px; }
+.text-bold   { font-weight: bold; }
+.text-italic { font-style: italic; }
+.text-small  { font-size: 0.85em; }
+.text-mono   { font-family: monospace; }
+
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+
+.hidden      { display: none !important; }
+.full-width  { width: 100%; }
+
+/* Spacing helpers */
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); }
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); }
+
+
+/* ── 24. RESPONSIVE ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .setup-grid      { grid-template-columns: 1fr; }
+    .workspace-grid  { grid-template-columns: 1fr; }
+    .grid-2          { grid-template-columns: 1fr; }
+    .ws-grid         { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .container       { padding: var(--space-5); }
+    .module-title    { font-size: 1.5rem; letter-spacing: 2px; }
+    .tab-btn         { font-size: 0.85em; padding: 8px var(--space-3); }
+    .controls-row    { gap: var(--space-3); }
+}

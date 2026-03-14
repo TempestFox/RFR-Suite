@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heliana's Hunter Suite — DM</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ecc71">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hunter Suite">
+    <link rel="apple-touch-icon" href="../icons/dm-icon-192.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --accent-green: #2ecc71;
+            --accent-gold: #d4af37;
+            --border-color: #444;
+            --muted-text: #888;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--accent-gold);
+            font-family: 'Lora', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .back-link {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            color: var(--muted-text);
+            font-size: 0.8em;
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .back-link:hover { color: var(--accent-green); border-color: var(--accent-green); }
+        h1 {
+            font-family: 'Merriweather', serif;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+            text-align: center;
+            font-size: 2.2rem;
+        }
+        .subtitle {
+            color: var(--muted-text);
+            font-style: italic;
+            font-size: 0.9rem;
+            margin: 0 0 50px;
+            text-align: center;
+        }
+        .button-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            max-width: 700px;
+            width: 100%;
+        }
+        .portal-btn {
+            font-family: 'Lora', serif;
+            background: #252525;
+            border: 1px solid var(--border-color);
+            color: var(--muted-text);
+            padding: 40px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            letter-spacing: 1px;
+        }
+        .portal-btn:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.2);
+            transform: translateY(-3px);
+        }
+        .portal-btn.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        @media (max-width: 600px) {
+            .button-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← Who are you?</a>
+
+    <h1>Hunter Suite</h1>
+    <p class="subtitle">Dungeon Master Tools</p>
+
+    <div class="button-container">
+        <a href="harvest.html" class="portal-btn">The Harvester</a>
+        <a href="crafting.html" class="portal-btn">Crafting & Cooking</a>
+        <a href="upgrades.html" class="portal-btn">The Forge</a>
+        <a href="storefront.html" class="portal-btn">The Storefront</a>
+        <a href="tracking.html" class="portal-btn disabled" title="Coming Soon">Hunt Tracking</a>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js', { scope: '/dm/' })
+                    .then(reg => console.log('[SW:DM] Registered, scope:', reg.scope))
+                    .catch(err => console.warn('[SW:DM] Registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>

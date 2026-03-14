@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Harvester — DM Suite</title>
+    <link rel="stylesheet" href="../suite.css">
+
+    <script src="../data/database.js"></script>
+    <script src="../data/equipment.js"></script>
+    <script src="../data/recipes.js"></script>
+    <script src="../data/Bestiary.js"></script>
+    <script src="../data/Items.js"></script>
+
+    <style>
+        /* ── Harvester — page-specific only ────────────────────────── */
+
+        /* Guaranteed drops panel */
+        .panel--gold  { border-color: var(--gold); }
+        .panel--red   { border-color: var(--red); }
+        .panel--green { border-color: var(--green); }
+        .panel--purple{ border-color: var(--green); }
+
+        .panel--gold   h2 { color: var(--gold);   border-color: var(--gold); }
+        .panel--red    h2 { color: var(--red);     border-color: var(--red); }
+        .panel--green  h2 { color: var(--green);   border-color: var(--green); }
+        .panel--purple h2 { color: var(--green);  border-color: var(--green); }
+
+        /* Workspace hidden until corpse generated */
+        #workspace { display: none; }
+
+        /* Roll controls section */
+        .roll-section {
+            margin-top: var(--space-5);
+            padding-top: var(--space-5);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* Two-column roll input block */
+        .roll-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+            align-items: start;
+        }
+
+        .roll-col-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            margin-bottom: var(--space-2);
+            font-size: 0.82em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .roll-block {
+            background: var(--depth-deep);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .roll-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-3);
+        }
+
+        .roll-row label {
+            color: var(--muted);
+            margin: 0;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .roll-row input {
+            width: 72px;
+            margin: 0;
+            padding: 5px 8px;
+            font-size: 0.88em;
+            text-align: center;
+            border-color: rgba(52,152,219,0.4);
+            flex-shrink: 0;
+        }
+
+        /* Helper block header */
+        .helper-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            color: var(--muted);
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-3);
+        }
+
+        .helper-header span { color: var(--muted); text-transform: none; font-weight: normal; }
+
+        .helper-note {
+            font-size: 0.78em;
+            color: var(--muted);
+            font-style: italic;
+            margin-top: var(--space-4);
+            line-height: 1.5;
+        }
+
+        /* Summary box */
+        #summary-box { display: none; margin-top: var(--space-8); }
+
+        .summary-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: var(--space-1);
+        }
+
+        /* Quad grid */
+        .quad-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+            gap: var(--space-3);
+        }
+
+        /* Harvest time badge — pushed to right in controls row */
+        .time-badge { margin-left: auto; }
+
+        /* Controls row — align all items to bottom */
+        .controls-row { align-items: flex-end; }
+        .controls-row .checkbox-label {
+            background: none;
+            border: none;
+            padding: 0 0 2px 0;
+            font-size: 0.85em;
+            gap: var(--space-2);
+        }
+        .controls-row .cb-destructive { color: var(--red); }
+        .controls-row .cb-overkill    { color: var(--gold); }
+        /* cb-destructive/overkill radio styles handled by suite.css */
+        .controls-row .time-badge     { padding-bottom: 2px; }
+
+        /* ── DRAG-REORDER QUEUE ─────────────────────────────────────── */
+
+        /* The container that holds draggable rows */
+        #queue-list {
+            position: relative;
+            user-select: none;
+            min-height: 40px;
+        }
+
+        /* Each draggable queue row */
+        .queue-row {
+            display: grid;
+            grid-template-columns: 28px 1fr auto;
+            align-items: center;
+            gap: var(--space-3);
+            padding: 9px var(--space-2);
+            border-bottom: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            cursor: grab;
+            transition: background var(--transition), box-shadow var(--transition);
+            background: transparent;
+            touch-action: none; /* required for pointer events on mobile */
+            position: relative;
+        }
+
+        .queue-row:active { cursor: grabbing; }
+
+        /* Lifted state — shown on the item being dragged */
+        .queue-row.is-dragging {
+            background: rgba(212, 175, 55, 0.08);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            border-color: rgba(212, 175, 55, 0.3);
+            border-radius: var(--radius-sm);
+            cursor: grabbing;
+            z-index: 100;
+            opacity: 0.95;
+        }
+
+        .queue-row.drop-gap-above { margin-top: 0; }
+        .queue-row.drop-gap-below { margin-bottom: 0; }
+
+        /* Drop line — absolutely positioned, zero layout impact */
+        #queue-drop-line {
+            position: fixed;
+            left: 0; right: 0;
+            height: 2px;
+            background: var(--gold);
+            box-shadow: 0 0 6px rgba(212,175,55,0.6);
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+        }
+
+        /* Drag handle */
+        .drag-handle {
+            color: var(--muted);
+            font-size: 1em;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.4;
+            transition: opacity var(--transition);
+            pointer-events: none;
+        }
+
+        .queue-row:hover .drag-handle { opacity: 0.9; }
+
+        .queue-row__dc {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            flex-shrink: 0;
+        }
+
+        /* Corpse table add button */
+        .btn-add {
+            font-family: var(--font-body);
+            background: var(--depth-raised);
+            color: var(--green);
+            border: 1px solid var(--green);
+            padding: 4px var(--space-2);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.78em;
+            font-weight: bold;
+            transition: background var(--transition), color var(--transition);
+            width: 100%;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .btn-add:hover { background: var(--green); color: var(--depth-inset); }
+        .btn-add:disabled { opacity: 0.3; cursor: not-allowed; background: transparent; }
+
+        /* DC total display */
+        .dc-total {
+            text-align: right;
+            font-size: 1.05em;
+            margin-bottom: var(--space-5);
+            padding-top: var(--space-3);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* Volatile rupture warning in results */
+        .rupture-warn {
+            color: var(--red);
+            font-size: 0.85em;
+            margin-top: var(--space-1);
+            display: flex;
+            gap: var(--space-1);
+            align-items: flex-start;
+        }
+    </style>
+</head>
+<body>
+
+<div id="global-tooltip" class="global-tooltip"></div>
+<div id="queue-drop-line"></div>
+
+<div class="container">
+
+    <div class="nav-header">
+        <a href="index.html" class="nav-btn">&#8592; DM Suite</a>
+        <button class="nav-btn" onclick="window.location.reload()">Reset &#10227;</button>
+    </div>
+
+    <h1 class="module-title">The Harvester</h1>
+    <div class="module-subtitle">DM Harvest Tool</div>
+
+    <!-- ── CONTROL PANEL ─────────────────────────────────────────── -->
+    <div class="control-panel">
+        <div class="setup-grid">
+            <div>
+                <label>Creature Base Type</label>
+                <select id="type-select" onchange="loadModifiers()">
+                    <option value="" disabled selected>— Select Type —</option>
+                </select>
+            </div>
+            <div>
+                <label>Creature Size</label>
+                <select id="size-select" onchange="updateHarvestTimeAndHelpers()">
+                    <option value="Tiny">Tiny</option>
+                    <option value="Small">Small</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Large">Large</option>
+                    <option value="Huge">Huge</option>
+                    <option value="Gargantuan">Gargantuan</option>
+                </select>
+            </div>
+            <div>
+                <label>Infused Essence (Optional)</label>
+                <select id="essence-select">
+                    <option value="">— No Essence —</option>
+                    <option value="Frail Essence">Frail Essence (CR 3–6)</option>
+                    <option value="Robust Essence">Robust Essence (CR 7–11)</option>
+                    <option value="Potent Essence">Potent Essence (CR 12–17)</option>
+                    <option value="Mythic Essence">Mythic Essence (CR 18–24)</option>
+                    <option value="Deific Essence">Deific Essence (CR 25+)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="modifier-container" style="display:none; margin-top: var(--space-5);">
+            <label style="color:var(--muted); text-transform:none; font-size:0.85em; font-weight:normal; margin-bottom:var(--space-2);">
+                Sub-species / Modifiers — select multiple
+            </label>
+            <div class="modifier-row" id="modifier-pills"></div>
+        </div>
+
+        <div class="controls-row">
+            <div class="toggle-container">
+                <button id="btn-pool"    class="toggle-btn active" onclick="setListMode('pool')">Pool List</button>
+                <button id="btn-harvest" class="toggle-btn"        onclick="setListMode('harvest')">Harvest List</button>
+            </div>
+
+            <label class="checkbox-label cb-destructive" style="background:none;border:none;padding:0;font-size:0.85em;gap:var(--space-2);">
+                <input type="radio" id="toggle-destructive" name="toggle-destructive">
+                <span>Destructive Kill</span>
+            </label>
+            <label class="checkbox-label cb-overkill" style="background:none;border:none;padding:0;font-size:0.85em;gap:var(--space-2);">
+                <input type="radio" id="toggle-overkill" name="toggle-overkill">
+                <span>Massive Damage</span>
+            </label>
+
+            <div class="time-badge" id="harvest-time-display">Time: 10 mins (1 Moment)</div>
+        </div>
+    </div>
+
+    <button class="btn-primary" onclick="scanCorpse()">1. Generate Corpse</button>
+
+    <div id="warning-banner" class="warning-banner">
+        <strong>CORPSE RUINED:</strong> One or more parts are damaged. Harvesting ruined parts imposes disadvantage on the entire harvest.
+    </div>
+
+    <!-- ── WORKSPACE ─────────────────────────────────────────────── -->
+    <div id="workspace">
+
+        <!-- Guaranteed drops (shown only when present) -->
+        <div class="panel panel--gold" id="guaranteed-drops-panel" style="display:none; margin-bottom:var(--space-5);">
+            <h2>Guaranteed Drops</h2>
+            <ul id="guaranteed-drops-list" style="color:var(--text); font-size:0.95em; line-height:1.7; margin:0; padding-left:var(--space-5);"></ul>
+        </div>
+
+        <!-- Boss notes (shown only when present) -->
+        <div class="panel panel--red" id="boss-notes-panel" style="display:none; margin-bottom:var(--space-5);">
+            <h2>Boss Mechanics &amp; Hazards</h2>
+            <div id="boss-notes-content" style="color:var(--text); font-size:0.92em; line-height:1.65;"></div>
+        </div>
+
+        <div class="workspace-grid" style="margin-bottom:var(--space-5);">
+
+            <!-- Left: Anatomy -->
+            <div class="panel panel--green">
+                <h2>Discovered Anatomy</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:38%;">Component</th>
+                            <th style="width:10%;">DC</th>
+                            <th style="width:22%;">Tags</th>
+                            <th style="width:16%;">Add</th>
+                            <th style="width:14%; text-align:center;">&#8734;</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpse-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Right: Harvest Queue -->
+            <div class="panel panel--gold" style="display:flex; flex-direction:column;">
+                <h2>Harvest Queue</h2>
+
+                <div id="queue-list"></div>
+
+                <div class="dc-total">
+                    <span style="color:var(--muted);">Target DC: </span>
+                    <strong style="color:var(--gold); font-size:1.25em;" id="queue-total-dc">0</strong>
+                </div>
+
+                <div class="roll-section" style="flex:1; display:flex; flex-direction:column;">
+
+                    <div class="skill-banner">
+                        <div class="skill-banner__heading">Required Check</div>
+                        <div class="skill-banner__value" id="req-skills">— Select Creature Type —</div>
+                    </div>
+
+                    <div class="roll-inputs">
+                        <div>
+                            <div class="roll-col-label"><span>Checks</span></div>
+                            <div class="roll-block">
+                                <div class="roll-row">
+                                    <label>Assess</label>
+                                    <input type="number" id="roll-assess" placeholder="—">
+                                </div>
+                                <div class="roll-row">
+                                    <label>Carve</label>
+                                    <input type="number" id="roll-carve" placeholder="—">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="roll-col-label">
+                                <span>Helpers</span>
+                                <span id="helper-count-label" style="color:var(--muted); font-weight:normal; text-transform:none; letter-spacing:0;"></span>
+                            </div>
+                            <div class="roll-block" id="helpers-container"></div>
+                        </div>
+                    </div>
+
+                    <div class="helper-note" id="helper-note" style="display:none;">
+                        * Helpers must be proficient in the required Carving Skill / Tool for full PB. Otherwise half PB.
+                    </div>
+
+                    <button class="btn-primary btn-primary--gold" style="margin-top:auto; margin-bottom:0;" onclick="executeHarvest()">
+                        2. Execute Harvest
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Quadnoculars -->
+        <div class="panel panel--purple">
+            <h2>L'Ars&#232;ne's Quadnoculars: Crafting Potential</h2>
+            <p style="font-size:0.88em; color:var(--muted); margin:0 0 var(--space-4);">Scanning blueprints that match the harvested parts...</p>
+            <div class="quad-grid" id="quad-results"></div>
+        </div>
+
+    </div><!-- /workspace -->
+
+    <!-- ── SUMMARY ────────────────────────────────────────────────── -->
+    <div id="summary-box">
+        <div class="styled-output" id="styled-output"></div>
+
+        <div class="summary-label-row">
+            <label style="margin:0; color:var(--green);">Raw Export (For Players)</label>
+            <button class="nav-btn" style="border-color:var(--green); color:var(--green);" onclick="copyHarvestSummary()">Copy</button>
+        </div>
+        <div class="raw-export" id="raw-export" contenteditable="true" spellcheck="false"></div>
+    </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Data integration ──────────────────────────────────────────────────────
+if (typeof recipeData !== 'undefined' && typeof itemData !== 'undefined') {
+    Object.assign(recipeData, itemData);
+}
+
+if (typeof bestiaryData !== 'undefined') {
+    const coreTypes = ["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"];
+    bestiaryData.forEach(m => {
+        if (!m?.metadata || !m?.harvest_and_loot) return;
+        let hasParts = m.harvest_and_loot.parts?.length > 0;
+        let hasDrops = m.harvest_and_loot.guaranteed_drops?.length > 0;
+        if (!hasParts && !hasDrops) return;
+        let rawType  = m.metadata.type || "Monstrosity";
+        let baseType = coreTypes.find(t => rawType.toLowerCase().includes(t.toLowerCase())) || "Monstrosity";
+        if (!creatureData[baseType]) creatureData[baseType] = { assessment:"Survival", harvest:"DEX (Survival)", parts:[], modifiers:{} };
+        if (!creatureData[baseType].modifiers) creatureData[baseType].modifiers = {};
+        creatureData[baseType].modifiers[m.name] = {
+            parts: m.harvest_and_loot.parts || [],
+            guaranteed_drops: m.harvest_and_loot.guaranteed_drops || []
+        };
+    });
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const HELPER_LIMITS = { Tiny:0, Small:1, Medium:2, Large:4, Huge:6, Gargantuan:8 };
+const TIME_MAP = {
+    Tiny:"10 mins (1 Moment)", Small:"10 mins (1 Moment)", Medium:"10 mins (1 Moment)",
+    Large:"30 mins (3 Moments)", Huge:"2 hrs (12 Moments)", Gargantuan:"12 hrs (72 Moments)"
+};
+const BOSS_NOTES = {
+    "Aboleth Broodmother (Boss)": `<strong style="color:var(--gold)">Pre-Harvest Hazard (Biohazard):</strong> Anyone harvesting or assisting must make a VDC Dexterity (Sleight of Hand) check. Failure means contact with mucous (save vs Infectious Mucous).<br><br><strong style="color:var(--gold)">Loot Note:</strong> One of the 4 eyes is perfectly detached (DC 0). 3 eyes remain for normal harvest.`,
+    "Magnetite Dragon (Boss)":    `<strong style="color:var(--gold)">Pre-Harvest Note:</strong> Starting the harvest on Lorhaem dispels the magic preserving her body.<br><br><strong style="color:var(--gold)">Loot Note:</strong> Torhaem drops one magnetite horn automatically if killed. If Torhaem lives, Lorhaem's horn is broken (DC 0) and only 1 intact horn remains.`,
+    "Polyhedrooze (Boss)":        `<strong style="color:var(--gold)">Loot Note:</strong> Automatically drops a pair of goo luck dice.<br><br><strong style="color:var(--gold)">Yield Note:</strong> The amount of Membrane harvested equals the number of sides the ooze had.`,
+    "Tavern Mimic (Boss)":        `<strong style="color:var(--gold)">Loot Note:</strong> The remains automatically contain a mimickey.`,
+    "Dreamholder (Boss)":         `<strong style="color:var(--gold)">Pre-Harvest Check:</strong> When exiting the Dreamscape, the character with the highest passive Perception spots a pocket watch (second chance) on the floor.`
+};
+
+// ── State ─────────────────────────────────────────────────────────────────
+let activePool   = [];
+let harvestQueue = [];
+let listMode     = 'pool';
+
+// ── Init ──────────────────────────────────────────────────────────────────
+function init() {
+    const sel = document.getElementById('type-select');
+    Object.keys(creatureData).sort().forEach(c => {
+        sel.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    updateHarvestTimeAndHelpers();
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────
+function loadModifiers() {
+    const type = document.getElementById('type-select').value;
+    const container = document.getElementById('modifier-container');
+    const pills     = document.getElementById('modifier-pills');
+
+    if (type && creatureData[type]) {
+        const ritual = ["Aberration","Celestial","Elemental","Fey","Fiend"];
+        let carveStr = ritual.includes(type)
+            ? creatureData[type].harvest.replace("DEX","DEX/Spellcasting")
+            : creatureData[type].harvest;
+        document.getElementById('req-skills').innerText = `${creatureData[type].assessment} / ${carveStr}`;
+    }
+
+    pills.innerHTML = '';
+    const mods = creatureData[type]?.modifiers;
+    if (mods && Object.keys(mods).length > 0) {
+        Object.keys(mods).sort().forEach(mod => {
+            pills.innerHTML += `<button class="pill-btn" data-mod="${mod}" onclick="this.classList.toggle('active')">${mod}</button>`;
+        });
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
+    updateHarvestTimeAndHelpers();
+}
+
+function setListMode(mode) {
+    listMode = mode;
+    document.getElementById('btn-pool').classList.toggle('active', mode === 'pool');
+    document.getElementById('btn-harvest').classList.toggle('active', mode === 'harvest');
+}
+
+function updateHarvestTimeAndHelpers() {
+    const size = document.getElementById('size-select').value;
+    document.getElementById('harvest-time-display').innerText = `Time: ${TIME_MAP[size]}`;
+
+    const max = HELPER_LIMITS[size];
+    document.getElementById('helper-count-label').innerText = max > 0 ? `${max} Max` : '';
+
+    const container = document.getElementById('helpers-container');
+    container.innerHTML = '';
+    document.getElementById('helper-note').style.display = 'none';
+
+    if (max === 0) {
+        container.innerHTML = `<div style="color:var(--muted);font-size:0.82em;font-style:italic;padding:var(--space-2) 0;">No helpers for Tiny creatures.</div>`;
+        return;
+    }
+
+    document.getElementById('helper-note').style.display = 'block';
+
+    for (let i = 1; i <= max; i++) {
+        container.innerHTML += `
+            <div class="roll-row" style="gap:var(--space-2);">
+                <input type="number" id="helper-pb-${i}" placeholder="PB" style="width:52px; padding:5px 6px; font-size:0.85em; text-align:center; border-color:rgba(52,152,219,0.4); flex-shrink:0;">
+                <select id="helper-prof-${i}" style="flex:1; padding:5px 6px; font-size:0.82em;">
+                    <option value="half">Nonproficient</option>
+                    <option value="full">Proficient</option>
+                </select>
+            </div>`;
+    }
+}
+
+// ── Corpse generation ─────────────────────────────────────────────────────
+function getFluidYield(size) {
+    const ranges = { Tiny:[1,1], Small:[1,2], Medium:[2,5], Large:[5,15], Huge:[15,25], Gargantuan:[25,50] };
+    let [min,max] = ranges[size]||[2,5];
+    if (Math.random() < 0.10) return { amount: max*2, juicy:true };
+    return { amount: Math.floor(Math.random()*(max-min+1))+min, juicy:false };
+}
+
+function calcWeight(tags, size) {
+    if (tags.includes("Fluid")) return "0.5 lb";
+    const w = { Tiny:"0.5 lb", Small:"1 lb", Medium:"1 lb", Large:"2 lb", Huge:"4 lb", Gargantuan:"8 lb" };
+    return w[size]||"1 lb";
+}
+
+function uid() { return Math.random().toString(36).substring(2,9); }
+
+function scanCorpse() {
+    const type = document.getElementById('type-select').value;
+    if (!type) { alert("Select a Base Type first."); return; }
+
+    const size          = document.getElementById('size-select').value;
+    const isDestructive = document.getElementById('toggle-destructive').checked;
+    const isOverkill    = document.getElementById('toggle-overkill').checked;
+
+    let rawPool   = [...creatureData[type].parts];
+    let activeMods = [];
+    let gDrops    = [];
+
+    document.querySelectorAll('#modifier-pills .pill-btn.active').forEach(btn => {
+        let mod = btn.getAttribute('data-mod');
+        activeMods.push(mod);
+        let mData = creatureData[type].modifiers[mod];
+        if (mData?.parts)            rawPool.push(...mData.parts);
+        if (mData?.guaranteed_drops) gDrops.push(...mData.guaranteed_drops);
+    });
+
+    // Guaranteed drops
+    if (gDrops.length > 0) {
+        document.getElementById('guaranteed-drops-list').innerHTML = gDrops.map(d => {
+            let text = typeof d === 'string' ? d : d.name + (d.amount ? ' (x' + d.amount + ')' : '') + (d.description ? ' — ' + d.description : '');
+            return `<li><strong style="color:var(--gold);">${text}</strong></li>`;
+        }).join('');
+        document.getElementById('guaranteed-drops-panel').style.display = 'block';
+    } else {
+        document.getElementById('guaranteed-drops-panel').style.display = 'none';
+    }
+
+    // Boss notes
+    let notesHTML = '';
+    activeMods.forEach(mod => {
+        for (let key in BOSS_NOTES) {
+            if (mod.includes(key)) {
+                notesHTML += `<div style="margin-bottom:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid rgba(231,76,60,0.25);">
+                    <strong style="color:var(--red);font-size:1.05em;text-transform:uppercase;">${mod}</strong>
+                    <div style="margin-top:var(--space-2);">${BOSS_NOTES[key]}</div>
+                </div>`;
+            }
+        }
+    });
+    document.getElementById('boss-notes-content').innerHTML = notesHTML;
+    document.getElementById('boss-notes-panel').style.display = notesHTML ? 'block' : 'none';
+
+    // Process pool
+    let pool = rawPool;
+    if (listMode === 'harvest') {
+        const counts = { Tiny:[2,3], Small:[3,4], Medium:[4,5], Large:[5,7], Huge:[7,9], Gargantuan:[9,12] };
+        let [mn,mx] = counts[size]||[4,5];
+        let count = Math.floor(Math.random()*(mx-mn+1))+mn;
+        if (isOverkill) count = Math.max(1, Math.ceil(count/2));
+        pool = [...rawPool].sort(()=>0.5-Math.random()).slice(0,count);
+    } else if (isOverkill) {
+        pool = [...rawPool].sort(()=>0.5-Math.random()).slice(0, Math.ceil(rawPool.length/2));
+    }
+
+    // Essence injection
+    const essence = document.getElementById('essence-select').value;
+    if (essence) {
+        let keep = !(isOverkill && Math.random() < 0.5);
+        if (keep) {
+            const dcs = { Frail:25, Robust:30, Potent:35, Mythic:40, Deific:50 };
+            let key = essence.split(' ')[0];
+            let dc  = dcs[key]||25;
+            let pos = Math.floor(Math.random()*(pool.length+1));
+            pool.splice(pos, 0, { name: essence.split(' (')[0], dc, tags:["Essence"] });
+        }
+    }
+
+    // Build active pool
+    activePool   = [];
+    harvestQueue = [];
+    let hasRuined = false;
+    let ruinIndex = isDestructive && pool.length > 0 ? Math.floor(Math.random()*pool.length) : -1;
+
+    pool.forEach((p, idx) => {
+        let isFluid  = p.tags?.includes("Fluid");
+        let yData    = isFluid ? getFluidYield(size) : { amount:1, juicy:false };
+        let isRuined = isDestructive && (idx === ruinIndex || Math.random() < 0.33);
+        if (isRuined) hasRuined = true;
+
+        activePool.push({
+            uuid:       uid(),
+            baseName:   p.name,
+            dc:         p.dc,
+            tags:       p.tags||[],
+            ruined:     isRuined,
+            rupture:    p.ruptureType ? `${p.ruptureType} (Save: ${p.ruptureSave})` : null,
+            yieldCount: yData.amount,
+            isJuicy:    yData.juicy,
+            weight:     calcWeight(p.tags||[], size),
+            sourceType: type,
+            activeMods: [...activeMods],
+            frozen:     false
+        });
+    });
+
+    document.getElementById('warning-banner').style.display = hasRuined ? 'block' : 'none';
+    document.getElementById('workspace').style.display      = 'block';
+    document.getElementById('summary-box').style.display    = 'none';
+
+    renderCorpse();
+    renderQueue();
+    executeQuadScan(activePool);
+}
+
+// ── Corpse table ──────────────────────────────────────────────────────────
+function renderCorpse() {
+    const tbody = document.getElementById('corpse-tbody');
+    tbody.innerHTML = '';
+
+    activePool.forEach(p => {
+        if (p.yieldCount <= 0 && !p.frozen) return;
+
+        let name = `<strong style="color:var(--gold);">${p.baseName}${p.tags.includes("Fluid")?` (x${p.yieldCount})`:''}</strong>`;
+        if (p.isJuicy) name = `<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> ` + name;
+        if (p.ruined)  name += `<br><span class="ruined-text">[ RUINED ] *Disadvantage*</span>`;
+
+        let tags = p.tags.map(t =>
+            t === "Volatile" && p.rupture
+                ? `<span style="color:var(--red)" title="${p.rupture}">Volatile</span>` : t
+        );
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${name}</td>
+                <td style="color:var(--muted);">${p.dc}</td>
+                <td style="font-size:0.8em;color:var(--muted);">${tags.join(', ')||'—'}</td>
+                <td>
+                    <button class="btn-add" onclick="addToQueue('${p.uuid}')"
+                        ${p.yieldCount <= 0 && !p.frozen ? 'disabled' : ''}>
+                        + Add
+                    </button>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn-freeze ${p.frozen?'active':''}"
+                        onclick="toggleFreeze('${p.uuid}')" title="Toggle infinite harvest">&#8734;</button>
+                </td>
+            </tr>`;
+    });
+}
+
+// ── Queue — pointer drag reorder ──────────────────────────────────────────
+let dragState = null; // { index, startY, currentY, rowHeight }
+
+function renderQueue() {
+    const list = document.getElementById('queue-list');
+    list.innerHTML = '';
+
+    let totalDC = 0;
+    harvestQueue.forEach((item, idx) => {
+        totalDC += item.dc;
+        let name = item.isJuicy
+            ? `<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> <span style="color:var(--text);">${item.baseName}</span>`
+            : `<span style="color:var(--text);">${item.baseName}</span>`;
+        if (item.ruined) name += ` <span class="ruined-text" style="display:inline;font-size:0.82em;">(Ruined)</span>`;
+
+        let row = document.createElement('div');
+        row.className    = 'queue-row';
+        row.dataset.index = idx;
+        row.innerHTML = `
+            <div class="drag-handle">&#8942;&#8942;</div>
+            <div style="font-size:0.92em; min-width:0;">${name}</div>
+            <div class="queue-row__dc">
+                <span style="color:var(--gold);font-weight:bold;font-size:0.95em;">DC ${item.dc}</span>
+                <button class="btn-remove" onclick="removeFromQueue(${idx})" title="Remove">&#215;</button>
+            </div>`;
+
+        // Pointer events for drag reorder
+        row.addEventListener('pointerdown', onQueuePointerDown);
+        list.appendChild(row);
+    });
+
+    document.getElementById('queue-total-dc').innerText = totalDC;
+}
+
+function onQueuePointerDown(e) {
+    if (e.target.classList.contains('btn-remove')) return;
+    e.preventDefault();
+
+    const row    = e.currentTarget;
+    const idx    = parseInt(row.dataset.index);
+    const listEl = document.getElementById('queue-list');
+
+    dragState = {
+        index:       idx,
+        targetIndex: idx,
+        listEl:      listEl
+    };
+
+    // Fade in place — no transform, no reflow
+    row.style.opacity       = '0.3';
+    row.style.pointerEvents = 'none';
+    row.setPointerCapture(e.pointerId);
+    document.getElementById('queue-drop-line').style.display = 'block';
+
+    row.addEventListener('pointermove',   onQueuePointerMove);
+    row.addEventListener('pointerup',     onQueuePointerUp);
+    row.addEventListener('pointercancel', onQueuePointerUp);
+}
+
+function onQueuePointerMove(e) {
+    if (!dragState) return;
+    e.preventDefault();
+
+    const listEl = dragState.listEl;
+    const rows   = [...listEl.querySelectorAll('.queue-row')];
+    const line   = document.getElementById('queue-drop-line');
+    const listRect = listEl.getBoundingClientRect();
+
+    let newTarget = harvestQueue.length;
+    let lineY     = null;
+
+    for (let i = 0; i < rows.length; i++) {
+        const ri = parseInt(rows[i].dataset.index);
+        if (ri === dragState.index) continue;
+        const rect = rows[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+            newTarget = ri;
+            lineY     = rect.top;
+            break;
+        }
+        newTarget = ri + 1;
+        lineY     = rect.bottom;
+    }
+
+    if (lineY === null && rows.length > 0) {
+        lineY = rows[rows.length - 1].getBoundingClientRect().bottom;
+    }
+
+    dragState.targetIndex = newTarget;
+
+    if (lineY !== null) {
+        line.style.top   = lineY + 'px';
+        line.style.left  = listRect.left + 'px';
+        line.style.width = listRect.width + 'px';
+    }
+}
+
+function onQueuePointerUp(e) {
+    if (!dragState) return;
+
+    const row  = e.currentTarget;
+    const from = dragState.index;
+    const to   = dragState.targetIndex;
+
+    row.style.opacity       = '';
+    row.style.pointerEvents = '';
+    document.getElementById('queue-drop-line').style.display = 'none';
+
+    row.removeEventListener('pointermove',   onQueuePointerMove);
+    row.removeEventListener('pointerup',     onQueuePointerUp);
+    row.removeEventListener('pointercancel', onQueuePointerUp);
+
+    dragState = null;
+
+    // Commit — skip if dropped on same position or the slot immediately after itself
+    const noMove = (from === to) || (to === from + 1);
+    if (!noMove) {
+        const item = harvestQueue.splice(from, 1)[0];
+        const dest = to > from ? to - 1 : to;
+        harvestQueue.splice(dest, 0, item);
+        renderQueue();
+    }
+}
+
+// ── Queue add / remove ────────────────────────────────────────────────────
+function addToQueue(uuid) {
+    let part = activePool.find(p => p.uuid === uuid);
+    if (part && (part.yieldCount > 0 || part.frozen)) {
+        if (!part.frozen) part.yieldCount--;
+        harvestQueue.push({ ...part, yieldCount:1 });
+        renderCorpse();
+        renderQueue();
+    }
+}
+
+function removeFromQueue(idx) {
+    let removed = harvestQueue.splice(idx, 1)[0];
+    let orig    = activePool.find(p => p.uuid === removed.uuid);
+    if (orig && !orig.frozen) orig.yieldCount++;
+    renderCorpse();
+    renderQueue();
+}
+
+function toggleFreeze(uuid) {
+    let part = activePool.find(p => p.uuid === uuid);
+    if (part) { part.frozen = !part.frozen; renderCorpse(); }
+}
+
+// ── Harvest execution ─────────────────────────────────────────────────────
+function getComponentValue(name, dc, tags) {
+    if (tags.includes("Essence")) {
+        const vals = { Frail:{buy:100,sell:50}, Robust:{buy:500,sell:250}, Potent:{buy:3000,sell:1500}, Mythic:{buy:16000,sell:8000}, Deific:{buy:160000,sell:80000} };
+        let key = name.split(' ')[0];
+        return vals[key] || {buy:100,sell:50};
+    }
+    return { buy:dc*4, sell:dc*2 };
+}
+
+function executeHarvest() {
+    const assess = parseInt(document.getElementById('roll-assess').value);
+    const carve  = parseInt(document.getElementById('roll-carve').value);
+
+    if (isNaN(assess)||isNaN(carve)) { alert("Enter both Assess and Carve rolls."); return; }
+    if (!harvestQueue.length)        { alert("Harvest Queue is empty."); return; }
+
+    let helperBonus = 0;
+    const size = document.getElementById('size-select').value;
+    const max  = HELPER_LIMITS[size];
+    for (let i=1; i<=max; i++) {
+        let pb  = parseInt(document.getElementById(`helper-pb-${i}`)?.value)||0;
+        let prof = document.getElementById(`helper-prof-${i}`)?.value;
+        if (pb) helperBonus += prof==='full' ? pb : Math.floor(pb/2);
+    }
+
+    let power   = assess + carve + helperBonus;
+    let totalDC = harvestQueue.reduce((s,i)=>s+i.dc, 0);
+    let type    = document.getElementById('type-select').value;
+    let size2   = document.getElementById('size-select').value;
+
+    // Build styled output
+    let html = `<h2>Harvest Outcome: ${type} (${size2})</h2>`;
+    html += `<div style="display:flex;gap:var(--space-10);margin-bottom:var(--space-5);align-items:baseline;">
+        <p style="margin:0;">Target DC: <strong style="color:var(--red);font-size:1.3em;">${totalDC}</strong></p>
+        <p style="margin:0;">Total Power: <strong style="color:var(--gold);font-size:1.3em;">${power}</strong>
+            <span style="font-size:0.8em;color:var(--muted);"> (A:${assess} + C:${carve} + H:${helperBonus})</span></p>
+    </div>`;
+
+    let rawLines = [];
+    let halted   = false;
+
+    harvestQueue.forEach(p => {
+        let val  = getComponentValue(p.baseName, p.dc, p.tags);
+        let name = (p.isJuicy ? '[Juicy!] ' : '') + p.baseName + (p.ruined?' (Ruined)':'');
+
+        let uiName = (p.isJuicy ? `<span style="color:var(--blue);font-weight:bold;">[Juicy!]</span> ` : '')
+                   + p.baseName
+                   + (p.ruined ? ` <span class="ruined-text" style="display:inline;">(Ruined)</span>` : '');
+
+        if (!halted && power >= p.dc) {
+            let parts = [name, p.sourceType];
+            let meta  = [];
+            if (p.tags.includes("Essence")) meta.push("Essence");
+            meta.push(...p.activeMods);
+            if (meta.length) parts.push(meta.join(', '));
+            if (p.tags.includes("Edible")) parts.push("Edible");
+            parts.push(p.weight, `${val.buy} gp`);
+            rawLines.push(parts.join(' | '));
+
+            html += `<div class="out-item">
+                <div class="out-status out-success">[&#10003; SUCCESS]</div>
+                <div class="out-details">
+                    <div>${uiName} <span style="color:var(--muted);font-size:0.85em;">(DC ${p.dc} | Est. Value: ${val.sell} gp)</span></div>
+                </div>
+            </div>`;
+            power -= p.dc;
+        } else {
+            let reason = halted ? "Chain broken by prior failure." : "Insufficient remaining power.";
+            halted = true;
+            html += `<div class="out-item out-item--fail">
+                <div class="out-status out-fail">[&#10007; FAILED ]</div>
+                <div class="out-details">
+                    <div>${uiName} <span style="color:var(--muted);font-size:0.85em;">(DC ${p.dc}) — ${reason}</span></div>
+                    ${p.rupture ? `<div class="rupture-warn"><span>&#9888;</span><span><strong>VOLATILE RUPTURE:</strong> ${p.rupture}</span></div>` : ''}
+                </div>
+            </div>`;
+        }
+    });
+
+    document.getElementById('styled-output').innerHTML   = html;
+    document.getElementById('raw-export').innerText      = rawLines.length ? rawLines.join('\n') : "No parts successfully harvested.";
+    document.getElementById('summary-box').style.display = 'block';
+    document.getElementById('summary-box').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function copyHarvestSummary() {
+    navigator.clipboard.writeText(document.getElementById('raw-export').innerText);
+}
+
+// ── Quadnoculars ──────────────────────────────────────────────────────────
+function executeQuadScan(pool) {
+    let seen   = new Set();
+    let unique = pool.filter(p => { if(seen.has(p.baseName)) return false; seen.add(p.baseName); return true; });
+    let used   = new Set();
+    let html   = '';
+
+    unique.forEach(part => {
+        let matches = [];
+        let pLow    = part.baseName.toLowerCase();
+        let tLow    = part.sourceType.toLowerCase();
+
+        if (typeof recipeData !== 'undefined') {
+            for(let rName in recipeData) {
+                let comps = recipeData[rName].components||[];
+                let hit   = comps.some(c => {
+                    let cL = c.toLowerCase();
+                    if (cL.includes(pLow)) return true;
+                    if (!part.tags.includes("Essence") && cL.includes("component") && cL.includes(tLow)) return true;
+                    return false;
+                });
+                if (hit) matches.push(rName);
+            }
+        }
+
+        if (matches.length) {
+            let chosen = matches[Math.floor(Math.random()*matches.length)];
+            let r      = recipeData[chosen];
+            let flavor = generateFlavorText(chosen, r.type, r.rarity, used);
+            used.add(flavor);
+            let comp   = r.components ? r.components.join('<br>') : 'No components.';
+            html += `<div class="craft-item">
+                <div style="font-size:0.72em;color:var(--green);margin-bottom:5px;border-bottom:1px solid var(--border-subtle);padding-bottom:4px;font-weight:bold;text-transform:uppercase;">From: ${part.baseName}</div>
+                <span class="tooltip-trigger" data-flavor="${flavor.replace(/"/g,'&quot;')}" data-comp="${comp.replace(/"/g,'&quot;')}">${chosen}</span>
+                <div class="rarity-label">${r.rarity} ${r.type}</div>
+            </div>`;
+        } else {
+            html += `<div class="craft-item" style="opacity:0.45;">
+                <div style="font-size:0.72em;color:var(--muted);margin-bottom:5px;border-bottom:1px solid var(--border-subtle);padding-bottom:4px;font-weight:bold;text-transform:uppercase;">From: ${part.baseName}</div>
+                <span style="color:var(--muted);font-style:italic;font-size:0.88em;">No known blueprints.</span>
+            </div>`;
+        }
+    });
+
+    document.getElementById('quad-results').innerHTML = html || `<p style="color:var(--muted);font-style:italic;">No parts to scan.</p>`;
+}
+
+function generateFlavorText(name, type, rarity, usedSet) {
+    let n = name.toLowerCase(), r = (rarity||"Magic").toLowerCase();
+    let adj = r.includes("legendary")?"mythic":r.includes("rare")?"fancy":"reliable";
+    const sp = [
+        {key:"resistance",  val:`Harder to kill when facing very specific elemental threats.`},
+        {key:"entanglement",val:`A ${adj} length of cord that likes to get handsy.`},
+        {key:"displacement",val:`Makes you look like you're standing slightly to the left.`},
+        {key:"mountebank",  val:`Perfect for dramatic exits accompanied by a cloud of smoke.`},
+        {key:"dragon",      val:`Forged from the remains of a ${adj} dead reptile.`},
+        {key:"cloak",       val:`A ${adj} garment for brooding in tavern corners.`},
+        {key:"ring",        val:`A ${adj} circle of metal for your finger.`},
+        {key:"potion",      val:`A ${adj} and questionable beverage. Bottoms up.`},
+        {key:"weapon",      val:`A ${adj} implement for aggressive negotiations.`},
+    ];
+    for(let s of sp) { if(n.includes(s.key)&&!usedSet.has(s.val)) return s.val; }
+    const fb = {
+        legendary: ["An item of mythic, terrifying power.","Priceless, dangerous, and incredibly shiny.","An ancient relic pulsing with unreasonable magic.","Try not to break the world with this."],
+        veryrare:  ["An exceedingly rare antiquity. Keep it away from thieves.","A masterwork of arcane artifice.","Smells faintly of ozone and expensive components."],
+        rare:      ["A highly valuable curiosity.","A potent magical tool. Handle with care.","Worth more than most people's homes."],
+        uncommon:  ["A handy piece of magical utility.","Standard issue for adventurers who survive.","Not bad for a bit of monster scrap."],
+    };
+    let pool  = fb[r.replace(' ','')] || ["A curious magical curio of unknown provenance."];
+    let avail = pool.filter(f=>!usedSet.has(f));
+    return (avail.length?avail:pool)[Math.floor(Math.random()*(avail.length||pool.length))];
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────
+document.addEventListener('mouseover', e => {
+    if (!e.target.classList.contains('tooltip-trigger')) return;
+    let tt     = document.getElementById('global-tooltip');
+    let flavor = e.target.getAttribute('data-flavor');
+    let comp   = e.target.getAttribute('data-comp');
+    let inner  = flavor
+        ? `<span style="font-style:italic;color:var(--text);">"${flavor}"</span>${comp?`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);color:var(--green);font-size:0.9em;">${comp}</div>`:''}`
+        : `<strong style="color:var(--purple)">${e.target.innerText}</strong>`;
+    tt.innerHTML        = inner;
+    tt.style.visibility = 'visible';
+    tt.style.opacity    = '1';
+});
+
+document.addEventListener('mousemove', e => {
+    let tt = document.getElementById('global-tooltip');
+    tt.style.left = (e.clientX+15)+'px';
+    tt.style.top  = (e.clientY+15)+'px';
+});
+
+document.addEventListener('mouseout', e => {
+    if (!e.target.classList.contains('tooltip-trigger')) return;
+    let tt = document.getElementById('global-tooltip');
+    tt.style.visibility = 'hidden';
+    tt.style.opacity    = '0';
+});
+
+window.onload = init;
+</script>
+</body>
+</html>

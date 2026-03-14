@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Storefront — DM Suite</title>
+    <link rel="stylesheet" href="../suite.css">
+
+    <script src="../data/equipment.js"></script>
+    <script src="../data/database.js"></script>
+    <script src="../data/recipes.js"></script>
+    <script src="../data/Bestiary.js"></script>
+    <script src="../data/Items.js"></script>
+
+    <style>
+        /* ── Storefront — page-specific only ───────────────────────── */
+
+        /* Tabs use green identity here (DM tool) */
+        .tab-btn.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+        }
+
+        /* Tooltip override — storefront uses gold border (item-value context) */
+        .global-tooltip {
+            border-color: var(--gold);
+        }
+
+        /* Ledger clickable names */
+        .ledger-name {
+            cursor: pointer;
+            color: var(--gold);
+            font-weight: bold;
+            border-bottom: 1px dotted transparent;
+            transition: border-color var(--transition);
+        }
+        .ledger-name:hover { border-color: var(--gold); }
+
+        /* Table stripe & hover */
+        tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+        tbody tr:hover { background: rgba(255,255,255,0.05); }
+
+        /* Scrollable table wrapper */
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+        .table-wrap table th {
+            background: var(--depth-inset);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .table-wrap--scroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Result / detail box */
+        .result-box {
+            margin-top: var(--space-5);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            background: var(--depth-inset);
+            border-left: 3px solid var(--gold);
+        }
+
+        .result-box__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-4);
+        }
+
+        .result-box__title {
+            font-family: var(--font-display);
+            color: var(--gold);
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-box__sub {
+            font-size: 0.85em;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .result-box__desc {
+            color: var(--text);
+            white-space: pre-wrap;
+            font-family: var(--font-body);
+            font-size: 0.92em;
+            line-height: 1.65;
+            border-top: 1px dashed var(--border);
+            padding-top: var(--space-3);
+            margin: 0;
+        }
+
+        /* Editable export text area */
+        .editable-output {
+            color: var(--text);
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            outline: none;
+            padding: var(--space-3);
+            background: rgba(0,0,0,0.25);
+            border-radius: var(--radius-sm);
+            border: 1px dashed var(--border);
+            transition: border-color var(--transition), background var(--transition);
+        }
+        .editable-output:focus {
+            border-color: rgba(155, 89, 182, 0.5);
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* Highlight value — gold numbers */
+        .val { color: var(--gold); font-weight: bold; font-size: 1.05em; }
+
+        /* Section card */
+        .card {
+            background: #1f1f1f;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .card h2 {
+            font-family: var(--font-display);
+            color: var(--green);
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: var(--space-3);
+            margin: 0 0 var(--space-4) 0;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Economy results row */
+        .economy-results {
+            display: flex;
+            gap: var(--space-6);
+            flex-wrap: wrap;
+            padding: var(--space-3) var(--space-4);
+            background: var(--depth-inset);
+            border-left: 3px solid var(--gold);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin-top: var(--space-4);
+        }
+
+        .economy-results__item {
+            font-size: 0.9em;
+            color: var(--muted);
+        }
+
+        /* Loot result border uses purple (thematic generator) */
+        .result-box--purple { border-left-color: var(--green); }
+        .result-box--purple .result-box__title { color: var(--green); }
+
+        /* Filter row used in ledger */
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin: var(--space-3) 0 var(--space-4);
+        }
+
+        /* Ledger pill active overrides to green */
+        #ledger-filters .pill-btn.active {
+            background: rgba(46, 204, 113, 0.12);
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: none;
+        }
+
+        /* Action pill — inline table button */
+        .action-pill {
+            min-width: 80px;
+            text-align: center;
+            padding: 5px 12px;
+            font-size: 0.78em;
+        }
+
+        /* Inline row of two buttons */
+        .btn-row {
+            display: flex;
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+        }
+
+        .btn-row .btn-primary {
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        /* Scanner bio table */
+        .bio-table td { padding: 8px 4px; border-bottom: 1px solid var(--border-subtle); }
+        .bio-table th { color: var(--green); font-size: 0.78em; text-transform: uppercase; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+        /* Craft item grid (quadnoculars) */
+        .craft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: var(--space-3);
+        }
+
+        /* Gear checkbox row */
+        .gear-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
+
+        .gear-row label {
+            color: var(--muted);
+            font-style: italic;
+            font-size: 0.85em;
+            text-transform: none;
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .gear-row input[type="checkbox"] {
+            /* uses suite.css circle style */
+        }
+    </style>
+</head>
+<body>
+
+<div id="global-tooltip" class="global-tooltip"></div>
+
+<div class="container">
+
+    <div class="nav-header">
+        <a href="index.html" class="nav-btn">&#8592; DM Suite</a>
+        <button onclick="window.location.reload()" class="nav-btn">Reset &#10227;</button>
+    </div>
+
+    <h1 class="module-title">The Storefront</h1>
+    <div class="module-subtitle">Trade Parameters, Shop Manager &amp; Master Ledger</div>
+
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('tab-trading', this)">Loot</button>
+        <button class="tab-btn" onclick="switchTab('tab-ledger', this)">Master Ledger</button>
+        <button class="tab-btn" onclick="switchTab('tab-scanner', this)">Tools of the Trade</button>
+    </div>
+
+    <!-- ── TAB: LOOT ──────────────────────────────────────────────── -->
+    <div id="tab-trading" class="tab-content active">
+
+        <!-- Thematic Loot Generator -->
+        <div class="card" style="border-color: var(--green);">
+            <h2 style="color: var(--green); border-color: var(--green);">Thematic Loot Generator</h2>
+            <div class="grid-2">
+                <div>
+                    <label>Creature / Corpse Type</label>
+                    <select id="loot-creature-type" onchange="updateLootTheme()">
+                        <option value="" disabled selected>Select Creature / Type...</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Encounter CR</label>
+                    <select id="loot-cr">
+                        <option value="0">CR 0–4</option>
+                        <option value="5">CR 5–10</option>
+                        <option value="11">CR 11–16</option>
+                        <option value="17">CR 17+</option>
+                    </select>
+                </div>
+            </div>
+
+            <label style="margin-top: var(--space-4);">Active Treasure Themes</label>
+            <div class="filter-row" id="loot-theme-toggles">
+                <button class="pill-btn" data-theme="Arcana"      onclick="toggleLootTheme(this)">Arcana</button>
+                <button class="pill-btn" data-theme="Armaments"   onclick="toggleLootTheme(this)">Armaments</button>
+                <button class="pill-btn" data-theme="Implements"  onclick="toggleLootTheme(this)">Implements</button>
+                <button class="pill-btn" data-theme="Relics"      onclick="toggleLootTheme(this)">Relics</button>
+                <button class="pill-btn" data-theme="Individual"  onclick="toggleLootTheme(this)" style="border-color: #555;">Individual (Coins Only)</button>
+                <button class="pill-btn" data-theme="Incidental"  onclick="toggleLootTheme(this)" style="border-color: #555;">Incidental (Junk)</button>
+            </div>
+
+            <div class="gear-row">
+                <input type="checkbox" id="loot-gear-toggle">
+                <label for="loot-gear-toggle">Include mundane weapons &amp; armour on body</label>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-primary" onclick="generateThematicLoot('individual')">Loot Body</button>
+                <button class="btn-primary" style="background: var(--green);" onclick="generateThematicLoot('hoard')">Loot Hoard / Lair</button>
+            </div>
+
+            <div id="loot-results" class="result-box result-box--purple" style="display: none;">
+                <div class="result-box__header">
+                    <div>
+                        <div class="result-box__title" id="loot-title">Generated Loot</div>
+                        <div class="result-box__sub">Click the text below to edit before copying</div>
+                    </div>
+                    <button class="nav-btn" onclick="copyLootToClipboard()">Copy</button>
+                </div>
+                <div class="editable-output" id="loot-output" contenteditable="true" spellcheck="false"></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+
+            <!-- Economy -->
+            <div class="card">
+                <h2>Economy</h2>
+                <label>Settlement Size</label>
+                <select id="trade-settlement">
+                    <option value="-12|1 year">Thorp (1–10 pop) [−12 Mod]</option>
+                    <option value="-8|6 months">Hamlet (11–100 pop) [−8 Mod]</option>
+                    <option value="-4|3 months">Village (101–1,000 pop) [−4 Mod]</option>
+                    <option value="0|1 month" selected>Town (1,001–10,000 pop) [0 Mod]</option>
+                    <option value="4|1 week">City (10,001–100,000 pop) [+4 Mod]</option>
+                    <option value="8|3 days">Metropolis (100,001–1,000,000 pop) [+8 Mod]</option>
+                    <option value="12|1 day">Megalopolis (1,000,001+ pop) [+12 Mod]</option>
+                </select>
+
+                <div class="grid-2" style="gap: var(--space-3); margin-top: var(--space-2);">
+                    <div>
+                        <label>Investigation Roll</label>
+                        <input type="number" id="investigation-roll" placeholder="14" onchange="calculateTrade()">
+                    </div>
+                    <div>
+                        <label>Persuasion Roll</label>
+                        <input type="number" id="persuasion-roll" placeholder="18" onchange="calculateTrade()">
+                    </div>
+                </div>
+
+                <label style="margin-top: var(--space-3);">Party Renown</label>
+                <select id="renown-level" onchange="calculateTrade()">
+                    <option value="0">Unknown (0 Renown)</option>
+                    <option value="1">Local Heroes (1–5) [−5% Buy]</option>
+                    <option value="2">Dale-Wide Fame (6–15) [−10% Buy]</option>
+                    <option value="3">Regional Saviours (16–25) [−15% Buy]</option>
+                    <option value="4">Paragons (26+) [−25% Buy]</option>
+                </select>
+
+                <div id="trade-results" class="economy-results" style="display: none;">
+                    <div class="economy-results__item">Modifier Total: <span class="val" id="res-total">—</span></div>
+                    <div class="economy-results__item">Reset: <span class="val" id="res-time">—</span></div>
+                    <div class="economy-results__item">Buy Rate: <span class="val" id="res-buy">—</span></div>
+                    <div class="economy-results__item">Sell Rate: <span class="val" id="res-sell">—</span></div>
+                </div>
+            </div>
+
+            <!-- Shop Manager -->
+            <div class="card">
+                <h2>Shop Manager</h2>
+                <div style="display: flex; gap: var(--space-2);">
+                    <select id="shop-type-select" style="flex: 1;">
+                        <option value="general">General Store</option>
+                        <option value="blacksmith">Blacksmith</option>
+                        <option value="apothecary">Alchemist</option>
+                        <option value="trader">Monster Parts</option>
+                        <option value="magic">Arcane Shop</option>
+                    </select>
+                    <button class="btn-action" style="width: auto; white-space: nowrap; padding: 0 var(--space-4);" onclick="generateShop()">Generate</button>
+                </div>
+
+                <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
+                    <input type="text" id="store-name" placeholder="Store name..." style="flex: 1;">
+                    <button class="btn-action" style="width: auto; white-space: nowrap; padding: 0 var(--space-4);" onclick="saveStore()">Save</button>
+                </div>
+
+                <label style="margin-top: var(--space-3);">Load Saved Store</label>
+                <select id="load-store" onchange="loadStore()">
+                    <option value="">— Select —</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Current Inventory -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                <h2 style="border: none; margin: 0; padding: 0;">Current Inventory</h2>
+                <button class="btn-action" style="width: auto; background: var(--depth-raised); border-color: var(--muted); color: var(--muted);" onclick="exportPlayerView()">Export Player View</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Type</th>
+                            <th>Base Buy</th>
+                            <th>Final Buy</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                        <tr><td colspan="5" style="color: var(--muted); font-style: italic; text-align: center; padding: var(--space-5);">No inventory generated yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /tab-trading -->
+
+    <!-- ── TAB: MASTER LEDGER ─────────────────────────────────────── -->
+    <div id="tab-ledger" class="tab-content">
+        <div class="card">
+            <p style="color: var(--muted); font-size: 0.88em; margin: 0 0 var(--space-4);">Search the universal database for components, mundane items, or magic blueprints. Click an item's name to view its full details.</p>
+
+            <input type="text" id="ledger-search" placeholder="Search all items..." onkeyup="renderLedger()">
+
+            <div class="filter-row" id="ledger-filters">
+                <button class="pill-btn active" data-filter="All"              onclick="toggleLedgerFilter(this)">All</button>
+                <button class="pill-btn"         data-filter="Components"      onclick="toggleLedgerFilter(this)">Components</button>
+                <button class="pill-btn"         data-filter="Mundane"         onclick="toggleLedgerFilter(this)">Mundane</button>
+                <button class="pill-btn"         data-filter="Adventuring Gear" onclick="toggleLedgerFilter(this)">Adventuring Gear</button>
+                <button class="pill-btn"         data-filter="Magic Items"     onclick="toggleLedgerFilter(this)">Magic Items</button>
+                <button class="pill-btn"         data-filter="Wondrous Items"  onclick="toggleLedgerFilter(this)">Wondrous Items</button>
+                <button class="pill-btn"         data-filter="Cooking Meals"   onclick="toggleLedgerFilter(this)">Cooking Meals</button>
+            </div>
+
+            <div class="table-wrap table-wrap--scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Weight</th>
+                            <th>Buy</th>
+                            <th>Est. Sale</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledger-tbody"></tbody>
+                </table>
+            </div>
+
+            <div id="ledger-display" class="result-box" style="display: none;">
+                <div class="result-box__header">
+                    <div>
+                        <div class="result-box__title" id="ledger-title">Item Name</div>
+                        <div class="result-box__sub" id="ledger-subtitle">Type • Rarity</div>
+                    </div>
+                    <button class="nav-btn" onclick="exportLedgerItem()">Copy</button>
+                </div>
+                <div class="result-box__desc" id="ledger-desc"></div>
+            </div>
+        </div>
+    </div><!-- /tab-ledger -->
+
+    <!-- ── TAB: TOOLS OF THE TRADE ───────────────────────────────── -->
+    <div id="tab-scanner" class="tab-content">
+        <div class="grid-2">
+
+            <!-- Fantastic Phalanges -->
+            <div class="card" style="border-color: var(--green);">
+                <h2 style="color: var(--green); border-color: var(--green);">Fantastic Phalanges</h2>
+                <label>Identify Corpse &amp; Essence</label>
+                <div style="display: flex; gap: var(--space-2);">
+                    <select id="phalanges-select" onchange="handleScannerUpdate()" style="flex: 2;">
+                        <option value="" disabled selected>Select Creature...</option>
+                    </select>
+                    <select id="scanner-essence" onchange="handleScannerUpdate()" style="flex: 1.5;">
+                        <option value="">— No Essence —</option>
+                        <option value="Frail Essence">Frail Essence</option>
+                        <option value="Robust Essence">Robust Essence</option>
+                        <option value="Potent Essence">Potent Essence</option>
+                        <option value="Mythic Essence">Mythic Essence</option>
+                        <option value="Deific Essence">Deific Essence</option>
+                    </select>
+                </div>
+                <div id="scanner-bio-results" style="margin-top: var(--space-4);">
+                    <p style="color: var(--muted); font-style: italic; font-size: 0.88em;">Select a corpse to view anatomy details...</p>
+                </div>
+            </div>
+
+            <!-- L'Arsène's Quadnoculars -->
+            <div class="card" style="border-color: var(--green);">
+                <h2 style="color: var(--green); border-color: var(--green);">L'Ars&#232;ne's Quadnoculars</h2>
+                <div id="scanner-blueprint-results" style="margin-top: var(--space-4);">
+                    <p style="color: var(--muted); font-style: italic; font-size: 0.88em;">Scan a corpse or essence to see crafting potential...</p>
+                </div>
+            </div>
+
+        </div>
+    </div><!-- /tab-scanner -->
+
+</div><!-- /container -->
+
+<script>
+// ── Data integration ──────────────────────────────────────────────────────
+if (typeof recipeData !== 'undefined' && typeof itemData !== 'undefined') {
+    Object.assign(recipeData, itemData);
+}
+
+if (typeof bestiaryData !== 'undefined') {
+    const coreTypes = ["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"];
+    bestiaryData.forEach(m => {
+        if (!m?.metadata || !m?.harvest_and_loot) return;
+        let hasParts = m.harvest_and_loot.parts?.length > 0;
+        let hasDrops = m.harvest_and_loot.guaranteed_drops?.length > 0;
+        if (!hasParts && !hasDrops) return;
+        let rawType = m.metadata.type || "Monstrosity";
+        let baseType = coreTypes.find(t => rawType.toLowerCase().includes(t.toLowerCase())) || "Monstrosity";
+        if (!creatureData[baseType]) creatureData[baseType] = { assessment:"Survival", harvest:"DEX (Survival)", parts:[], modifiers:{} };
+        if (!creatureData[baseType].modifiers) creatureData[baseType].modifiers = {};
+        creatureData[baseType].modifiers[m.name] = {
+            parts: m.harvest_and_loot.parts || [],
+            guaranteed_drops: m.harvest_and_loot.guaranteed_drops || []
+        };
+    });
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let universalDB        = [];
+let activeLedgerFilters = ["All"];
+let currentInventory   = [];
+let currentBuyModifier  = 1.0;
+let currentSellModifier = 1.0;
+let currentPhalangesCorpse = null;
+let currentPhalangesParts  = [];
+let currentViewedLedgerItem = null;
+let dbBuilt = false;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.onload = function() {
+    updateStoreDropdown();
+    initLootDropdown();
+    initPhalangesDropdown();
+};
+
+// ── Currency helpers ──────────────────────────────────────────────────────
+function parseGold(v) {
+    if (!v || v === "N/A" || v === "Unknown") return 0;
+    let s = String(v).toLowerCase().replace(/,/g, '');
+    let m = s.match(/([\d.]+)\s*(gp|sp|cp|pp)/);
+    if (m) {
+        let n = parseFloat(m[1]);
+        return m[2]==='pp'?n*10 : m[2]==='gp'?n : m[2]==='sp'?n/10 : n/100;
+    }
+    let n = s.match(/[\d.]+/);
+    return n ? parseFloat(n[0]) : 0;
+}
+
+function formatGold(gp) {
+    if (gp <= 0) return "0 gp";
+    let cp = Math.floor(gp * 100);
+    let g  = Math.floor(cp / 100);
+    let r  = cp % 100;
+    let s  = Math.floor(r / 10);
+    let c  = r % 10;
+    let parts = [];
+    if (g) parts.push(`${g} gp`);
+    if (s) parts.push(`${s} sp`);
+    if (c) parts.push(`${c} cp`);
+    return parts.join(", ");
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(tabId, btn) {
+    if (tabId === 'tab-ledger' && !dbBuilt) { buildUniversalDB(); dbBuilt = true; renderLedger(); }
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ── Economy ───────────────────────────────────────────────────────────────
+function calculateTrade() {
+    const inv   = parseInt(document.getElementById('investigation-roll').value) || 0;
+    const pers  = parseInt(document.getElementById('persuasion-roll').value) || 0;
+    const setMod = parseInt(document.getElementById('trade-settlement').value.split('|')[0]);
+    const total  = inv + pers + setMod;
+    const renown = [1.0, 0.95, 0.9, 0.85, 0.75][document.getElementById('renown-level').value];
+
+    if      (total <= 10) { currentBuyModifier = 0;   currentSellModifier = 0;   }
+    else if (total <= 25) { currentBuyModifier = 1.5;  currentSellModifier = 0.5; }
+    else if (total <= 50) { currentBuyModifier = 1.0;  currentSellModifier = 1.0; }
+    else                  { currentBuyModifier = 0.8;  currentSellModifier = 1.2; }
+    currentBuyModifier *= renown;
+
+    document.getElementById('res-total').innerText = total;
+    document.getElementById('res-time').innerText  = document.getElementById('trade-settlement').value.split('|')[1];
+    document.getElementById('res-buy').innerText   = currentBuyModifier === 0 ? "N/A" : (currentBuyModifier * 100).toFixed(0) + "%";
+    document.getElementById('res-sell').innerText  = currentSellModifier === 0 ? "N/A" : (currentSellModifier * 100).toFixed(0) + "%";
+    document.getElementById('trade-results').style.display = 'flex';
+    renderInventory();
+}
+
+// ── Loot Generator ────────────────────────────────────────────────────────
+function initLootDropdown() {
+    const sel = document.getElementById('loot-creature-type');
+    Object.keys(creatureData).sort().forEach(type => {
+        sel.innerHTML += `<option value="${type}">${type}</option>`;
+        if (creatureData[type].modifiers) {
+            Object.keys(creatureData[type].modifiers).sort().forEach(mod => {
+                sel.innerHTML += `<option value="${mod}">— ${mod}</option>`;
+            });
+        }
+    });
+}
+
+function toggleLootTheme(btn) {
+    const theme = btn.getAttribute('data-theme');
+    if (theme === "Individual" || theme === "Incidental") {
+        document.querySelectorAll('#loot-theme-toggles .pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    } else {
+        document.querySelector('[data-theme="Individual"]').classList.remove('active');
+        document.querySelector('[data-theme="Incidental"]').classList.remove('active');
+        btn.classList.toggle('active');
+    }
+}
+
+function getActiveThemes() {
+    let active = [];
+    document.querySelectorAll('#loot-theme-toggles .pill-btn.active').forEach(b => active.push(b.getAttribute('data-theme')));
+    return active.length > 0 ? active : ["Individual"];
+}
+
+function updateLootTheme() {
+    const cType = document.getElementById('loot-creature-type').value;
+    const gear  = document.getElementById('loot-gear-toggle');
+    document.querySelectorAll('#loot-theme-toggles .pill-btn').forEach(b => b.classList.remove('active'));
+    gear.checked = false;
+
+    let defaults = ["Individual"];
+    if      (["Aberration","Celestial","Elemental","Fey"].includes(cType))  defaults = ["Arcana"];
+    else if (["Dragon"].includes(cType))                                     defaults = ["Arcana","Armaments","Implements","Relics"];
+    else if (["Giant","Humanoid"].includes(cType))                          { defaults = ["Armaments"]; gear.checked = true; }
+    else if (["Construct"].includes(cType))                                  defaults = ["Armaments"];
+    else if (["Fiend","Monstrosity"].includes(cType))                        defaults = ["Implements"];
+    else if (["Undead","Plant","Ooze"].includes(cType))                      defaults = ["Relics"];
+
+    let n = cType.toLowerCase();
+    if (n.includes("magnetite") || n.includes("mummified")) defaults = ["Armaments"];
+    if (n.includes("mech") || n.includes("archaeologist"))   defaults = ["Implements"];
+    if (n.includes("brood") || n.includes("tar "))           defaults = ["Relics"];
+    if (n.includes("dragon"))                                 defaults = ["Arcana","Armaments","Implements","Relics"];
+
+    defaults.forEach(t => { let b = document.querySelector(`#loot-theme-toggles [data-theme="${t}"]`); if(b) b.classList.add('active'); });
+}
+
+function generateThematicLoot(lootType) {
+    const cr     = parseInt(document.getElementById('loot-cr').value);
+    const themes = getActiveThemes();
+    const gear   = document.getElementById('loot-gear-toggle').checked;
+    let output = "";
+    let gearStr = "";
+
+    if (gear) {
+        let weapons = [], armors = [];
+        for(let k in equipmentData) {
+            let t = equipmentData[k].type;
+            if (t.includes("Melee")||t.includes("Ranged")) weapons.push(k);
+            if (t.includes("Armor")||t==="Shield")          armors.push(k);
+        }
+        if (weapons.length && armors.length) {
+            gearStr = `+ ${weapons[Math.floor(Math.random()*weapons.length)]}\n+ ${armors[Math.floor(Math.random()*armors.length)]}`;
+        }
+    }
+
+    if (lootType === 'individual') {
+        output = `[ POCKET CHANGE ]\n` + generateIndividualCoin(cr);
+        if (gearStr) output += `\n\n[ MUNDANE GEAR ]\n${gearStr}`;
+        let minor = [];
+        if (themes.includes("Arcana"))     minor.push("1x Potion of Healing","1x Cantrip Spell Scroll","1x Vial of glowing liquid");
+        if (themes.includes("Armaments"))  minor.push("1d4x Silvered Arrows","1x Whetstone & Oil Flask","1x Ornate Dagger");
+        if (themes.includes("Implements")) minor.push("1x Rusty Thieves' Tools","1x Carved wooden idol");
+        if (themes.includes("Relics"))     minor.push("1x Small Bloodstone (50gp)","1x Ceramic Burial Mask");
+        if (minor.length && !themes.includes("Individual")) {
+            output += `\n\n[ THEMATIC DROP ]\n+ ${minor[Math.floor(Math.random()*minor.length)]}`;
+        }
+        if (Math.random() < 0.15 && !themes.includes("Individual")) {
+            let surprise = pullThematicItems(themes, 1, cr, true);
+            if (surprise) output += `\n\n[ SURPRISE MAGIC ITEM ]\n${surprise}`;
+        }
+    } else {
+        output  = `[ TREASURE HOARD | ${themes.join(" & ").toUpperCase()} ]\n${"─".repeat(38)}\n`;
+        output += `[ COINAGE ]\n` + generateHoardCoin(cr) + `\n\n[ MAGIC ITEMS ]\n`;
+        output += pullThematicItems(themes, cr < 5 ? 1 : rollDice(1,4), cr, false);
+        if (gearStr) output += `\n\n[ MUNDANE GEAR ]\n${gearStr}`;
+    }
+
+    document.getElementById('loot-output').innerText = output;
+    document.getElementById('loot-results').style.display = 'block';
+}
+
+function pullThematicItems(themes, count, cr, surpriseOnly) {
+    let pool = [];
+    let rarities = ["Common","Uncommon"];
+    if (cr >= 5)  rarities.push("Rare");
+    if (cr >= 11) rarities.push("Very Rare");
+    if (cr >= 17) rarities.push("Legendary");
+
+    for(let k in recipeData) {
+        let r = recipeData[k];
+        if (!rarities.includes(r.rarity)) continue;
+        let match = false;
+        if (themes.includes("Arcana")     && r.category === "Enchanting") match = true;
+        if (themes.includes("Armaments")  && r.type && (r.type.includes("Weapon")||r.type.includes("Armor"))) match = true;
+        if (themes.includes("Implements") && r.type && (r.type.includes("Ring")||r.type.includes("Tool")||r.type.includes("Wand"))) match = true;
+        if (themes.includes("Relics")     && r.type && r.type.includes("Wondrous")) match = true;
+        if (match) pool.push(`+ ${k} (${r.rarity})`);
+    }
+    if (!pool.length) return surpriseOnly ? null : "+ 1x Random Magic Item (DMG)";
+    let results = [];
+    for(let i=0; i<count; i++) results.push(pool[Math.floor(Math.random()*pool.length)]);
+    return results.join("\n");
+}
+
+function generateIndividualCoin(cr) {
+    const d100 = Math.floor(Math.random()*100)+1;
+    if (cr <= 4) return d100<=30 ? `${rollDice(5,6)} cp` : d100<=60 ? `${rollDice(4,6)} sp` : d100<=95 ? `${rollDice(3,6)} gp` : `${rollDice(1,6)} pp`;
+    if (cr <= 10) return `${rollDice(4,6)*10} gp`;
+    return `${rollDice(4,6)*100} gp`;
+}
+
+function generateHoardCoin(cr) {
+    if (cr <= 4)  return `${rollDice(6,6)*100} cp, ${rollDice(3,6)*100} sp, ${rollDice(2,6)*10} gp`;
+    if (cr <= 10) return `${rollDice(2,6)*100} sp, ${rollDice(2,6)*1000} gp`;
+    return `${rollDice(12,6)*1000} gp, ${rollDice(8,6)*1000} pp`;
+}
+
+function rollDice(count, sides) { let t=0; for(let i=0;i<count;i++) t+=Math.floor(Math.random()*sides)+1; return t; }
+function copyLootToClipboard() { navigator.clipboard.writeText(document.getElementById('loot-output').innerText).then(() => alert("Loot copied!")); }
+
+// ── Shop Manager ──────────────────────────────────────────────────────────
+function generateShop() {
+    if (!dbBuilt) { buildUniversalDB(); dbBuilt = true; }
+    const type = document.getElementById('shop-type-select').value;
+    currentInventory = [];
+    let pool = [];
+
+    const filters = {
+        blacksmith: i => i.type.includes("Armor")||i.type.includes("Weapon")||i.type.includes("Shield"),
+        apothecary: i => i.name.includes("Potion")||i.type.includes("Tool")||i.type.includes("Essence"),
+        trader:     i => i.filterCats.includes("Components"),
+        magic:      i => i.filterCats.includes("Magic Items")||i.filterCats.includes("Wondrous Items"),
+        general:    i => i.filterCats.includes("Mundane")||i.filterCats.includes("Adventuring Gear"),
+    };
+
+    pool = universalDB.filter(filters[type] || filters.general);
+    for(let i=0; i<8; i++) {
+        if(pool.length) currentInventory.push(pool[Math.floor(Math.random()*pool.length)]);
+    }
+    renderInventory();
+}
+
+function renderInventory() {
+    const tbody = document.getElementById('inventory-tbody');
+    if (!currentInventory.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted);font-style:italic;text-align:center;padding:var(--space-5);">No inventory generated yet.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = currentInventory.map((item, idx) => {
+        let final = item.buy * currentBuyModifier;
+        let tip   = getTooltipHTML(item.name);
+        let name  = tip
+            ? `<span class="tooltip-trigger" data-item="${item.name.replace(/'/g,"&#39;")}">${item.name}</span>`
+            : item.name;
+        return `<tr>
+            <td style="color:var(--gold);font-weight:bold;">${name}</td>
+            <td style="color:var(--muted);font-size:0.88em;">${item.type}</td>
+            <td>${formatGold(item.buy)}</td>
+            <td class="val">${formatGold(final)}</td>
+            <td><button class="btn-remove" onclick="removeItem(${idx})" title="Remove">&#215;</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function removeItem(idx)  { currentInventory.splice(idx,1); renderInventory(); }
+
+function saveStore() {
+    const name = document.getElementById('store-name').value.trim();
+    if (!name) { alert("Enter a store name first."); return; }
+    let stores = JSON.parse(localStorage.getItem('stores')||'{}');
+    stores[name] = currentInventory;
+    localStorage.setItem('stores', JSON.stringify(stores));
+    updateStoreDropdown();
+    alert(`"${name}" saved.`);
+}
+
+function loadStore() {
+    let stores = JSON.parse(localStorage.getItem('stores')||'{}');
+    let name   = document.getElementById('load-store').value;
+    if (!name || !stores[name]) return;
+    currentInventory = stores[name];
+    renderInventory();
+}
+
+function updateStoreDropdown() {
+    const sel = document.getElementById('load-store');
+    sel.innerHTML = '<option value="">— Select —</option>';
+    let stores = JSON.parse(localStorage.getItem('stores')||'{}');
+    for(let k in stores) sel.innerHTML += `<option value="${k}">${k}</option>`;
+}
+
+function exportPlayerView() {
+    if (!currentInventory.length) { alert("Generate or add items first."); return; }
+    let name = document.getElementById('store-name').value || "Local Merchant";
+    let text = `[ ${name.toUpperCase()} ]\n${"─".repeat(38)}\n`;
+    currentInventory.forEach(item => {
+        text += `+ ${item.name} | ${formatGold(item.buy * currentBuyModifier)}\n`;
+    });
+    const w = window.open('','_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>${name}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+        <style>
+            body{background:#1a1a1a;color:#e0e0e0;font-family:'Lora',serif;padding:40px;text-align:center;}
+            .box{background:#252525;padding:25px;border:1px solid #444;border-radius:8px;max-width:600px;margin:0 auto;white-space:pre-wrap;text-align:left;font-family:monospace;font-size:1.05em;line-height:1.6;color:#d4af37;}
+            .btn{font-family:'Lora',serif;background:#d4af37;color:#1a1a1a;border:none;padding:12px 24px;font-size:1em;font-weight:bold;border-radius:4px;cursor:pointer;margin-bottom:20px;text-transform:uppercase;}
+            .btn:hover{background:#f1c40f;}
+        </style></head><body>
+        <button class="btn" id="copyBtn" onclick="copyText()">Copy to Clipboard</button>
+        <div class="box" id="exportText">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        <script>function copyText(){navigator.clipboard.writeText(document.getElementById('exportText').innerText).then(()=>{let b=document.getElementById('copyBtn');b.innerText='Copied!';b.style.background='#2ecc71';setTimeout(()=>{b.innerText='Copy to Clipboard';b.style.background='#d4af37';},2000);});}<\/script>
+        </body></html>`);
+    w.document.close();
+}
+
+// ── Universal DB ──────────────────────────────────────────────────────────
+function buildUniversalDB() {
+    universalDB = [];
+
+    // Essences
+    [{name:"Frail Essence",buy:100,sell:50,req:"Uncommon (CR 3-6)"},
+     {name:"Robust Essence",buy:500,sell:250,req:"Rare (CR 7-11)"},
+     {name:"Potent Essence",buy:3000,sell:1500,req:"Very Rare (CR 12-17)"},
+     {name:"Mythic Essence",buy:16000,sell:8000,req:"Legendary (CR 18-24)"},
+     {name:"Deific Essence",buy:160000,sell:80000,req:"Artifact (CR 25+)"}
+    ].forEach(e => universalDB.push({
+        id:`ess_${e.name.replace(/\s+/g,'')}`, name:e.name,
+        filterCats:["Components","Magic Items"], type:"Magical Essence",
+        rarity:e.name.split(' ')[0], weight:"0.1 lb",
+        buy:e.buy, sell:e.sell,
+        desc:`Used to power magical blueprints.\nRequirements: ${e.req}`
+    }));
+
+    // Creature components
+    function addPart(p, src) {
+        let tags = p.tags||[];
+        let isFluid = tags.includes("Fluid");
+        let isVolatile = tags.includes("Volatile");
+        let cleanTags = tags.filter(t=>t!=="Volatile");
+        let tagStr = cleanTags.length ? ` [${cleanTags.join(", ")}]` : "";
+        universalDB.push({
+            id:`comp_${p.name.replace(/[^a-zA-Z0-9]/g,'')}_ ${src.replace(/[^a-zA-Z0-9]/g,'')}`,
+            name:`${p.name} (${src})`, filterCats:["Components"], type:"Harvestable Component",
+            rarity:"Standard", weight:isFluid?"0.5 lb":"1 lb*",
+            buy:p.dc*4, sell:p.dc*2,
+            desc:`Harvest DC: ${p.dc}${tagStr}\nWeight: *Non-fluid weight depends on beast size.${isVolatile?`\nRupture: ${p.ruptureType} (See Statblock)`:""}`
+        });
+    }
+
+    if (typeof creatureData !== 'undefined') {
+        for(let type in creatureData) {
+            (creatureData[type].parts||[]).forEach(p => addPart(p, type));
+            for(let mod in (creatureData[type].modifiers||{})) {
+                (creatureData[type].modifiers[mod].parts||[]).forEach(p => addPart(p, mod));
+            }
+        }
+    }
+
+    // Recipes & items
+    if (typeof recipeData !== 'undefined') {
+        for(let name in recipeData) {
+            let r = recipeData[name];
+            let isMeal = r.category === "Cooking";
+            let tl = (r.type||"").toLowerCase();
+            let cats = [];
+            if (isMeal) cats.push("Cooking Meals");
+            else { cats.push("Magic Items"); if (tl.includes("wondrous")) cats.push("Wondrous Items"); }
+            universalDB.push({
+                id:`rec_${name.replace(/[^a-zA-Z0-9]/g,'')}`, name, filterCats:cats,
+                type:r.type||"Magic Item", rarity:r.rarity||"Varies",
+                weight:isMeal?"1 lb":"-",
+                buy:parseGold(r.marketValue), sell:parseGold(r.marketValue)/2,
+                desc:r.stats||r.description||r.desc||r.effect||"No description available."
+            });
+        }
+    }
+
+    // Equipment
+    if (typeof equipmentData !== 'undefined') {
+        for(let name in equipmentData) {
+            let e = equipmentData[name];
+            let tl = (e.type||"").toLowerCase();
+            let cats = ["Mundane"];
+            if (tl.includes("adventuring")||tl.includes("gear")) cats.push("Adventuring Gear");
+            let details = [];
+            if (e.damage)     details.push(`Damage: ${e.damage}`);
+            if (e.ac)         details.push(`AC: ${e.ac}`);
+            if (e.properties) details.push(`Properties: ${e.properties}`);
+            if (e.mastery)    details.push(`Mastery: ${e.mastery}`);
+            if (e.description||e.desc) details.push(`\n${e.description||e.desc}`);
+            let buy = parseGold(e.cost);
+            universalDB.push({
+                id:`equip_${name.replace(/[^a-zA-Z0-9]/g,'')}`, name, filterCats:cats,
+                type:e.type||"Mundane Item", rarity:"Standard",
+                weight:e.weight||"-", buy, sell:buy/2,
+                desc:details.length ? details.join("\n") : "Standard equipment."
+            });
+        }
+    }
+
+    universalDB.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+// ── Ledger ────────────────────────────────────────────────────────────────
+function renderLedger() {
+    if (!dbBuilt) { buildUniversalDB(); dbBuilt = true; }
+    const search = document.getElementById('ledger-search').value.toLowerCase();
+    let filtered = universalDB.filter(item => {
+        let matchFilter = activeLedgerFilters.includes("All") || item.filterCats.some(c => activeLedgerFilters.includes(c));
+        let matchSearch = item.name.toLowerCase().includes(search) || item.type.toLowerCase().includes(search);
+        return matchFilter && matchSearch;
+    });
+
+    const limit = 100;
+    let html = filtered.slice(0, limit).map(item => `
+        <tr>
+            <td class="ledger-name" onclick="displayLedgerItem('${item.id}')">${item.name}</td>
+            <td style="color:var(--muted);font-size:0.88em;">${item.type}</td>
+            <td style="color:var(--muted);font-size:0.85em;">${item.weight}</td>
+            <td class="val">${formatGold(item.buy)}</td>
+            <td class="val">${formatGold(item.sell)}</td>
+            <td><button class="pill-btn action-pill" onclick="addToShop('${item.id}', this)">+ Shop</button></td>
+        </tr>`).join('');
+
+    if (filtered.length > limit) {
+        html += `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-style:italic;padding:var(--space-4);">
+            Showing ${limit} of ${filtered.length} — keep typing to narrow results.
+        </td></tr>`;
+    }
+
+    document.getElementById('ledger-tbody').innerHTML = html || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:var(--space-5);">No results found.</td></tr>`;
+}
+
+function toggleLedgerFilter(btn) {
+    const f = btn.dataset.filter;
+    if (f === "All") {
+        activeLedgerFilters = ["All"];
+    } else {
+        if (activeLedgerFilters.includes("All")) activeLedgerFilters = [];
+        activeLedgerFilters.includes(f)
+            ? activeLedgerFilters.splice(activeLedgerFilters.indexOf(f), 1)
+            : activeLedgerFilters.push(f);
+        if (!activeLedgerFilters.length) activeLedgerFilters = ["All"];
+    }
+    document.querySelectorAll('#ledger-filters button').forEach(b =>
+        b.classList.toggle('active', activeLedgerFilters.includes(b.dataset.filter))
+    );
+    renderLedger();
+}
+
+function addToShop(id, btn) {
+    let item = universalDB.find(i => i.id === id);
+    if (!item) return;
+    currentInventory.push({name:item.name, type:item.type, buy:item.buy, sell:item.sell});
+    renderInventory();
+    let orig = btn.innerText;
+    btn.innerText = "Added";
+    btn.style.background = "rgba(46,204,113,0.15)";
+    btn.style.borderColor = "var(--green)";
+    btn.style.color = "var(--green)";
+    setTimeout(() => {
+        btn.innerText = orig;
+        btn.style.background = "";
+        btn.style.borderColor = "";
+        btn.style.color = "";
+    }, 1000);
+}
+
+function displayLedgerItem(id) {
+    let item = universalDB.find(i => i.id === id);
+    if (!item) return;
+    currentViewedLedgerItem = item;
+    document.getElementById('ledger-title').innerText    = item.name;
+    document.getElementById('ledger-subtitle').innerText = `${item.type} • Rarity: ${item.rarity} • Weight: ${item.weight} • Buy: ${formatGold(item.buy)}`;
+    document.getElementById('ledger-desc').innerText     = item.desc;
+    document.getElementById('ledger-display').style.display = 'block';
+    document.getElementById('ledger-display').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function exportLedgerItem() {
+    if (!currentViewedLedgerItem) return;
+    let item = currentViewedLedgerItem;
+    let text = `[ ${item.name.toUpperCase()} ]\nType: ${item.type}\nRarity: ${item.rarity}\nWeight: ${item.weight}\nBuy: ${formatGold(item.buy)}\nEst. Sale: ${formatGold(item.sell)}\n${"─".repeat(38)}\n${item.desc}\n`;
+    const w = window.open('','_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>${item.name}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+        <style>body{background:#1a1a1a;color:#e0e0e0;font-family:'Lora',serif;padding:40px;text-align:center;}.box{background:#252525;padding:25px;border:1px solid #444;border-radius:8px;max-width:600px;margin:0 auto;white-space:pre-wrap;text-align:left;font-family:monospace;font-size:1.05em;line-height:1.6;color:#d4af37;}.btn{font-family:'Lora',serif;background:#d4af37;color:#1a1a1a;border:none;padding:12px 24px;font-size:1em;font-weight:bold;border-radius:4px;cursor:pointer;margin-bottom:20px;text-transform:uppercase;}.btn:hover{background:#f1c40f;}</style></head>
+        <body><button class="btn" id="copyBtn" onclick="copyText()">Copy to Clipboard</button>
+        <div class="box" id="exportText">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        <script>function copyText(){navigator.clipboard.writeText(document.getElementById('exportText').innerText).then(()=>{let b=document.getElementById('copyBtn');b.innerText='Copied!';b.style.background='#2ecc71';setTimeout(()=>{b.innerText='Copy to Clipboard';b.style.background='#d4af37';},2000);});}<\/script>
+        </body></html>`);
+    w.document.close();
+}
+
+// ── Phalanges / Scanner ───────────────────────────────────────────────────
+function initPhalangesDropdown() {
+    const sel = document.getElementById('phalanges-select');
+    Object.keys(creatureData).sort().forEach(type => {
+        sel.innerHTML += `<option value="${type}|BASE">${type}</option>`;
+        if (creatureData[type].modifiers) {
+            Object.keys(creatureData[type].modifiers).sort().forEach(mod => {
+                sel.innerHTML += `<option value="${type}|${mod}">— ${mod} (${type})</option>`;
+            });
+        }
+    });
+}
+
+function handleScannerUpdate() {
+    let pVal  = document.getElementById('phalanges-select').value;
+    let eVal  = document.getElementById('scanner-essence').value;
+
+    if (pVal) {
+        let [type, mod] = pVal.split('|');
+        let creature    = creatureData[type];
+        currentPhalangesCorpse = mod === "BASE" ? type : mod;
+        currentPhalangesParts  = [...(creature.parts||[])];
+        if (mod !== "BASE" && creature.modifiers?.[mod]?.parts) {
+            currentPhalangesParts.push(...creature.modifiers[mod].parts);
+        }
+
+        let rows = currentPhalangesParts.map(p => {
+            let tags = p.tags||[];
+            let display = tags.map(t => t==="Volatile"&&p.ruptureType
+                ? `<span style="color:var(--red)" title="${p.ruptureType}">Volatile</span>` : t);
+            return `<tr class="bio-table">
+                <td style="color:var(--gold);font-weight:bold;">${p.name}</td>
+                <td style="color:var(--gold);font-weight:bold;">${p.dc}</td>
+                <td style="color:var(--muted);font-size:0.85em;">${display.join(", ")||"—"}</td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('scanner-bio-results').innerHTML = `
+            <p style="color:var(--green);font-size:0.85em;margin-bottom:4px;"><strong>Know Thy Enemy:</strong> Share one trait, resistance, or vulnerability.</p>
+            <p style="font-size:0.82em;color:var(--muted);margin-bottom:var(--space-4)"><strong>Anatomiser:</strong> Read for 1hr to gain proficiency in a knowledge skill for 24hrs.</p>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead><tr>
+                    <th class="bio-table">Part</th>
+                    <th class="bio-table">DC</th>
+                    <th class="bio-table">Tags</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    } else {
+        currentPhalangesCorpse = null;
+        document.getElementById('scanner-bio-results').innerHTML = `<p style="color:var(--muted);font-style:italic;font-size:0.88em;">Select a corpse to view anatomy details...</p>`;
+    }
+    renderCrafts(eVal);
+}
+
+function renderCrafts(essenceStr) {
+    let targets = [];
+    if (currentPhalangesCorpse) targets.push(currentPhalangesCorpse);
+    if (essenceStr) targets.push(essenceStr.split(' (')[0]);
+
+    if (!targets.length) {
+        document.getElementById('scanner-blueprint-results').innerHTML = `<p style="color:var(--muted);font-style:italic;font-size:0.88em;">Scan a corpse or essence to see crafting potential...</p>`;
+        return;
+    }
+
+    let crafts = [];
+    if (typeof recipeData !== 'undefined') {
+        for(let name in recipeData) {
+            if (recipeData[name].components?.some(c => targets.some(t => c.toLowerCase().includes(t.toLowerCase())))) {
+                crafts.push(name);
+            }
+        }
+    }
+
+    if (!crafts.length) {
+        document.getElementById('scanner-blueprint-results').innerHTML = `<p style="color:var(--muted);font-style:italic;font-size:0.88em;">No specific blueprints tied to this resonance.</p>`;
+        return;
+    }
+
+    let usedFlavors = new Set();
+    let list = crafts.sort(()=>0.5-Math.random()).slice(0,8);
+    let html = `<div class="craft-grid">${list.map(c => {
+        let r = recipeData[c];
+        let flavor = generateFlavorText(c, r.type, r.rarity, usedFlavors);
+        usedFlavors.add(flavor);
+        let comp = r.components ? r.components.join("<br>") : "No components specified.";
+        return `<div class="craft-item">
+            <span class="tooltip-trigger" data-flavor="${flavor.replace(/"/g,'&quot;')}" data-comp="${comp.replace(/"/g,'&quot;')}">${c}</span>
+            <div class="rarity-label">${r.rarity} ${r.type}</div>
+        </div>`;
+    }).join('')}</div>`;
+
+    document.getElementById('scanner-blueprint-results').innerHTML = html;
+}
+
+// ── Tooltip helpers ───────────────────────────────────────────────────────
+function getTooltipHTML(name) {
+    if (typeof equipmentData !== 'undefined' && equipmentData[name]) {
+        let e = equipmentData[name];
+        return `<strong style="color:var(--gold);font-family:var(--font-display);">${name}</strong><br>
+            <span style="font-family:var(--font-body);">${e.damage||e.ac||''}${e.properties?'<br>'+e.properties:''}${e.mastery?'<br><span style="color:var(--muted)">'+e.mastery+'</span>':''}</span>`;
+    }
+    if (typeof recipeData !== 'undefined' && recipeData[name]) {
+        let r = recipeData[name];
+        let flavor = generateFlavorText(name, r.type, r.rarity, new Set());
+        return `<strong style="color:var(--gold);font-family:var(--font-display);">${name}</strong><br>
+            <span style="font-family:var(--font-body);"><em style="color:var(--muted)">${r.rarity||'Magic'} ${r.type||'Item'}</em><br>
+            <span style="color:var(--text);font-style:italic;">"${flavor}"</span></span>`;
+    }
+    return null;
+}
+
+function generateFlavorText(name, type, rarity, usedSet) {
+    let n = name.toLowerCase(), r = (rarity||"Magic").toLowerCase();
+    let adj = r.includes("legendary")?"mythic":r.includes("rare")?"fancy":"reliable";
+    const specifics = [
+        {key:"resistance",  val:`Harder to kill when facing very specific elemental threats.`},
+        {key:"entanglement",val:`A ${adj} length of cord that likes to get handsy.`},
+        {key:"displacement",val:`Makes you look like you're standing slightly to the left.`},
+        {key:"dragon",      val:`Forged from the remains of a ${adj} dead reptile.`},
+        {key:"cloak",       val:`A ${adj} garment for brooding in tavern corners.`},
+        {key:"potion",      val:`A ${adj} and questionable beverage. Bottoms up.`},
+        {key:"weapon",      val:`A ${adj} implement for aggressive negotiations.`},
+    ];
+    for(let s of specifics) { if(n.includes(s.key)&&!usedSet.has(s.val)) return s.val; }
+    const fb = {
+        legendary: ["An item of mythic, terrifying power.","Priceless, dangerous, and incredibly shiny.","Try not to break the world with this."],
+        veryrare:  ["An exceedingly rare antiquity.","A masterwork of arcane artifice."],
+        rare:      ["A highly valuable curiosity.","A potent magical tool. Handle with care."],
+        uncommon:  ["A handy piece of magical utility.","Standard issue for adventurers who survive."],
+    };
+    let pool = fb[r.replace(' ','')] || ["A curious magical curio of unknown provenance."];
+    let avail = pool.filter(f => !usedSet.has(f));
+    return (avail.length?avail:pool)[Math.floor(Math.random()*(avail.length||pool.length))];
+}
+
+// ── Tooltip events ────────────────────────────────────────────────────────
+document.addEventListener('mouseover', e => {
+    if (!e.target.classList.contains('tooltip-trigger')) return;
+    let tt      = document.getElementById('global-tooltip');
+    let itemKey = e.target.dataset.item;
+    let flavor  = e.target.getAttribute('data-flavor');
+    let comp    = e.target.getAttribute('data-comp');
+
+    if (itemKey) {
+        tt.innerHTML = getTooltipHTML(itemKey.replace(/&#39;/g,"'")) || `<strong>${e.target.innerText}</strong>`;
+    } else if (flavor) {
+        tt.innerHTML = `<span style="font-style:italic;color:var(--text);">"${flavor}"</span>`;
+        if (comp) tt.innerHTML += `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);color:var(--green);font-size:0.9em;">${comp}</div>`;
+    } else {
+        tt.innerHTML = `<strong style="color:var(--gold)">${e.target.innerText}</strong>`;
+    }
+    tt.style.visibility = 'visible';
+    tt.style.opacity    = '1';
+});
+
+document.addEventListener('mousemove', e => {
+    let tt = document.getElementById('global-tooltip');
+    tt.style.left = (e.clientX + 15) + 'px';
+    tt.style.top  = (e.clientY + 15) + 'px';
+});
+
+document.addEventListener('mouseout', e => {
+    if (!e.target.classList.contains('tooltip-trigger')) return;
+    let tt = document.getElementById('global-tooltip');
+    tt.style.visibility = 'hidden';
+    tt.style.opacity    = '0';
+});
+</script>
+</body>
+</html>

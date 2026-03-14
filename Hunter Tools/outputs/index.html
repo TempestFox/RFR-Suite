@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heliana's Guide — Hunter Suite</title>
+    <link rel="stylesheet" href="suite.css">
+    <style>
+        /* ── Root landing — page-specific only ─────────────────────── */
+
+        body {
+            justify-content: center;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+            padding: 40px 20px;
+            gap: 60px;
+        }
+
+        /* Wordmark block */
+        .wordmark {
+            text-align: center;
+            user-select: none;
+        }
+
+        .wordmark__title {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 4vw, 2.6rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--text);
+            margin-bottom: 6px;
+            line-height: 1.1;
+        }
+
+        .wordmark__title span {
+            color: var(--gold);
+        }
+
+        .wordmark__sub {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--muted);
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+
+        .wordmark__rule {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+            margin: 18px auto 0;
+        }
+
+        /* Two-card layout */
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: 100%;
+            max-width: 820px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 32px;
+            background: var(--depth-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            text-decoration: none;
+            color: inherit;
+            transition:
+                border-color var(--transition-slow),
+                box-shadow var(--transition-slow),
+                transform var(--transition-slow),
+                background var(--transition-slow);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ambient glow — hidden by default */
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: var(--radius-lg);
+            opacity: 0;
+            transition: opacity var(--transition-slow);
+            pointer-events: none;
+        }
+
+        .card--dm::before {
+            background: radial-gradient(ellipse at 50% 0%, rgba(46, 204, 113, 0.08) 0%, transparent 70%);
+        }
+
+        .card--player::before {
+            background: radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card:hover::before { opacity: 1; }
+
+        .card--dm:hover {
+            border-color: var(--green);
+            box-shadow: 0 8px 30px rgba(46, 204, 113, 0.12);
+        }
+
+        .card--player:hover {
+            border-color: var(--gold);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.12);
+        }
+
+        /* Sigil — large identity character */
+        .card__sigil {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+            transition: color var(--transition-slow);
+        }
+
+        .card--dm    .card__sigil { color: var(--green); }
+        .card--player .card__sigil { color: var(--gold); }
+
+        .card__name {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            transition: color var(--transition-slow);
+        }
+
+        .card--dm:hover    .card__name { color: var(--green); }
+        .card--player:hover .card__name { color: var(--gold); }
+
+        .card__desc {
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 28px;
+            flex-grow: 1;
+        }
+
+        .card__cta {
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 8px 22px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            transition:
+                border-color var(--transition),
+                color var(--transition),
+                background var(--transition);
+        }
+
+        .card--dm:hover    .card__cta {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(46, 204, 113, 0.07);
+        }
+
+        .card--player:hover .card__cta {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.07);
+        }
+
+        /* Footer note */
+        .gate__footer {
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-align: center;
+            opacity: 0.6;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .cards {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+
+            .wordmark__title { letter-spacing: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="gate">
+
+    <div class="wordmark">
+        <div class="wordmark__title">Heliana's <span>Guide</span></div>
+        <div class="wordmark__sub">Monster Hunting Suite</div>
+        <div class="wordmark__rule"></div>
+    </div>
+
+    <div class="cards">
+
+        <a href="dm/index.html" class="card card--dm">
+            <div class="card__sigil">DM</div>
+            <div class="card__name">DM Suite</div>
+            <div class="card__desc">
+                Harvest generation, crafting and cooking, storefront and loot tools.
+                Run the table.
+            </div>
+            <div class="card__cta">Enter</div>
+        </a>
+
+        <a href="player/index.html" class="card card--player">
+            <div class="card__sigil">H</div>
+            <div class="card__name">Hunter's Companion</div>
+            <div class="card__desc">
+                Field scanner, recipe book, workshop and cauldron.
+                Play your hunter.
+            </div>
+            <div class="card__cta">Enter</div>
+        </a>
+
+    </div>
+
+    <div class="gate__footer">
+        Based on Heliana's Guide to Monster Hunting
+    </div>
+
+</div>
+
+</body>
+</html>
