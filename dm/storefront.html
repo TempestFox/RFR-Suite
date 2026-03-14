@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Storefront — DM Suite</title>
     <link rel="stylesheet" href="../suite.css">
+    <script src="../suite.js"></script>
 
     <script src="../data/equipment.js"></script>
     <script src="../data/database.js"></script>
@@ -530,6 +531,7 @@ window.onload = function() {
     updateStoreDropdown();
     initLootDropdown();
     initPhalangesDropdown();
+    setTimeout(initCustomSelects, 0);
 };
 
 // ── Currency helpers ──────────────────────────────────────────────────────

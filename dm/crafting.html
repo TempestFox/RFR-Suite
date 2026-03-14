@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heliana's Crafting Calculator</title>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite.css">
+    <script src="../suite.js"></script>
     
     <script src="../data/equipment.js"></script>
     <script src="../data/database.js"></script>
@@ -143,6 +145,21 @@
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #888; }
         * { scrollbar-width: thin; scrollbar-color: #333 transparent; }
+        /* Searchable dropdown component */
+        .csd-wrap { position: relative; width: 100%; }
+        .csd-input-row { display: flex; align-items: center; position: relative; }
+        .csd-input { font-family: 'Lora', serif; padding: 10px; padding-right: 36px; background-color: #111; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+        .csd-input:focus { outline: none; border-color: var(--accent-green); box-shadow: 0 0 0 1px rgba(46,204,113,0.1); }
+        .csd-arrow { position: absolute; right: 12px; font-size: 0.72em; color: #888; pointer-events: none; transition: transform 0.2s; }
+        .csd-wrap.open .csd-arrow { transform: rotate(180deg); }
+        .csd-panel { position: fixed; background: #111; border: 1px solid #444; border-radius: 4px; z-index: 9999; overflow: hidden; max-height: 0; opacity: 0; pointer-events: none; transition: max-height 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+        .csd-wrap.open .csd-panel { max-height: 320px; opacity: 1; pointer-events: auto; overflow-y: auto; }
+        .csd-opt { padding: 10px 14px; cursor: pointer; font-size: 0.9em; color: var(--text-color); border-bottom: 1px solid #1e1e1e; transition: background 0.15s, color 0.15s; }
+        .csd-opt:last-child { border-bottom: none; }
+        .csd-opt:hover { background: rgba(46,204,113,0.08); color: var(--accent-green); }
+        .csd-opt.csd-selected { color: var(--accent-green); font-weight: bold; background: rgba(46,204,113,0.06); }
+        .csd-opt-sub { font-size: 0.78em; color: #666; display: block; margin-top: 2px; }
+        .csd-empty { padding: 12px 14px; color: #666; font-style: italic; font-size: 0.88em; }
     </style>
 </head>
 <body>
@@ -177,13 +194,23 @@
             <label>Search Blueprint/Recipe:</label>
             
             <div id="mfg-container">
-                <input type="text" list="mundane-list" id="mundane-input" placeholder="Search weapons, armor, etc..." onchange="handleSelection(this.value, 'mundane')">
-                <datalist id="mundane-list"></datalist>
+                <div class="csd-wrap" id="csd-mundane">
+                    <div class="csd-input-row">
+                        <input type="text" class="csd-input" id="mundane-input" placeholder="Search weapons, armor, etc..." autocomplete="off" oninput="csdFilter('mundane')" onfocus="csdOpen('mundane')" onblur="csdBlur('mundane')">
+                        <span class="csd-arrow">&#9662;</span>
+                    </div>
+                    <div class="csd-panel" id="csd-mundane-panel"></div>
+                </div>
             </div>
 
             <div id="ench-container" style="display: none;">
-                <input type="text" list="magic-list" id="magic-input" placeholder="Search enchanted items..." onchange="handleSelection(this.value, 'magic')">
-                <datalist id="magic-list"></datalist>
+                <div class="csd-wrap" id="csd-magic">
+                    <div class="csd-input-row">
+                        <input type="text" class="csd-input" id="magic-input" placeholder="Search enchanted items..." autocomplete="off" oninput="csdFilter('magic')" onfocus="csdOpen('magic')" onblur="csdBlur('magic')">
+                        <span class="csd-arrow">&#9662;</span>
+                    </div>
+                    <div class="csd-panel" id="csd-magic-panel"></div>
+                </div>
                 
                 <div id="forge-wrapper" style="display: none; margin-top: 15px;">
                     <label class="switch-container">
@@ -200,8 +227,13 @@
             </div>
 
             <div id="cook-container" style="display: none;">
-                <input type="text" list="cook-list" id="cook-input" placeholder="Search Recipes..." onchange="handleSelection(this.value, 'cook')">
-                <datalist id="cook-list"></datalist>
+                <div class="csd-wrap" id="csd-cook">
+                    <div class="csd-input-row">
+                        <input type="text" class="csd-input" id="cook-input" placeholder="Search Recipes..." autocomplete="off" oninput="csdFilter('cook')" onfocus="csdOpen('cook')" onblur="csdBlur('cook')">
+                        <span class="csd-arrow">&#9662;</span>
+                    </div>
+                    <div class="csd-panel" id="csd-cook-panel"></div>
+                </div>
             </div>
 
             <div id="custom-panel" class="dynamic-panel">
@@ -584,33 +616,100 @@
     let activeState = { isForging: false, dc1: 0, dc2: 0, type: "Manufacturing", rarity: "Common" };
     window.activeQuirks = { Manufacturing: { flaws: [], boons: [] }, Enchanting: { flaws: [], boons: [] }, Cooking: { flaws: [], boons: [] } };
 
+    // --- SEARCHABLE DROPDOWN (CSD) ---
+    let csdOpenId = null;
+
+    function csdRender(id, items) {
+        const panel = document.getElementById(`csd-${id}-panel`);
+        if (!panel) return;
+        if (!items.length) { panel.innerHTML = `<div class="csd-empty">No results found.</div>`; return; }
+        panel.innerHTML = items.map(d =>
+            `<div class="csd-opt" data-value="${d.value.replace(/"/g,'&quot;')}" onmousedown="csdSelect('${id}','${d.value.replace(/'/g,"\\'")}')">
+                ${d.label}${d.sub ? `<span class="csd-opt-sub">${d.sub}</span>` : ''}
+            </div>`
+        ).join('');
+    }
+
+    function csdPosition(id) {
+        const wrap = document.getElementById(`csd-${id}`);
+        const panel = document.getElementById(`csd-${id}-panel`);
+        const input = document.getElementById(`${id}-input`);
+        if (!wrap || !panel || !input) return;
+        const r = input.getBoundingClientRect();
+        panel.style.left = r.left + 'px';
+        panel.style.top = (r.bottom + 2) + 'px';
+        panel.style.width = r.width + 'px';
+        panel.style.minWidth = r.width + 'px';
+    }
+
+    function csdOpen(id) {
+        if (csdOpenId && csdOpenId !== id) csdClose(csdOpenId);
+        const wrap = document.getElementById(`csd-${id}`);
+        const input = document.getElementById(`${id}-input`);
+        if (!wrap || !input) return;
+        const q = input.value.toLowerCase();
+        const filtered = (window.csdData?.[id] || []).filter(d => !q || d.label.toLowerCase().includes(q) || (d.sub||'').toLowerCase().includes(q));
+        csdRender(id, filtered);
+        csdPosition(id);
+        wrap.classList.add('open');
+        csdOpenId = id;
+    }
+
+    function csdFilter(id) {
+        csdOpen(id);
+    }
+
+    function csdBlur(id) {
+        // Small delay so mousedown on option fires first
+        setTimeout(() => csdClose(id), 150);
+    }
+
+    function csdClose(id) {
+        const wrap = document.getElementById(`csd-${id}`);
+        if (wrap) wrap.classList.remove('open');
+        if (csdOpenId === id) csdOpenId = null;
+    }
+
+    function csdSelect(id, value) {
+        const input = document.getElementById(`${id}-input`);
+        if (input) input.value = value;
+        csdClose(id);
+        // Map id back to source name used by handleSelection
+        const sourceMap = { mundane: 'mundane', magic: 'magic', cook: 'cook' };
+        handleSelection(value, sourceMap[id]);
+    }
+
     // --- INITIALIZATION ---
     window.onload = function() {
         if (typeof recipeData === 'undefined') { document.getElementById('error-banner').style.display = 'block'; return; }
-        const mundaneList = document.getElementById('mundane-list');
-        const magicList = document.getElementById('magic-list');
-        const cookList = document.getElementById('cook-list');
-        const customBaseList = document.getElementById('custom-base-list');
 
-        magicList.innerHTML += `<option value="Custom Blueprint">Custom Blueprint</option>`;
+        // Build data stores for each searchable dropdown
+        window.csdData = { mundane: [], magic: [], cook: [] };
+
+        window.csdData.magic.push({ value: 'Custom Blueprint', label: 'Custom Blueprint', sub: '' });
         const sortedKeys = Object.keys(recipeData).sort((a, b) => a.localeCompare(b));
 
         for (const item of sortedKeys) {
-            let opt = document.createElement('option');
-            opt.value = item;
-            opt.innerText = recipeData[item].type || "Item";
-
-            if (recipeData[item].category === "Manufacturing") {
-                mundaneList.appendChild(opt);
-                let customBaseOpt = document.createElement('option');
-                customBaseOpt.value = item;
-                customBaseOpt.innerText = item;
-                customBaseList.appendChild(customBaseOpt);
-            } 
-            else if (recipeData[item].category === "Enchanting" || recipeData[item].category === "Smithing" || recipeData[item].category === "Alchemy") magicList.appendChild(opt);
-            else if (recipeData[item].category === "Cooking") cookList.appendChild(opt);
+            const sub = recipeData[item].type || '';
+            if (recipeData[item].category === 'Manufacturing') {
+                window.csdData.mundane.push({ value: item, label: item, sub });
+            } else if (['Enchanting','Smithing','Alchemy'].includes(recipeData[item].category)) {
+                window.csdData.magic.push({ value: item, label: item, sub });
+            } else if (recipeData[item].category === 'Cooking') {
+                window.csdData.cook.push({ value: item, label: item, sub });
+            }
         }
+
+        // Also populate custom base list (forge base still uses datalist internally — keep as hidden select)
+        const customBaseList = document.getElementById('custom-base-list');
+        if (customBaseList) {
+            window.csdData.mundane.forEach(d => {
+                let opt = document.createElement('option'); opt.value = d.value; customBaseList.appendChild(opt);
+            });
+        }
+
         toggleConMods();
+        setTimeout(initCustomSelects, 0);
     };
 
     // --- UI TOGGLES ---
@@ -698,6 +797,7 @@
             
             row.appendChild(sel);
             list.appendChild(row);
+            upgradeSelect(sel);
         });
     }
 

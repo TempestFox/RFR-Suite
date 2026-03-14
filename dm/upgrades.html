@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Forge — DM Suite</title>
     <link rel="stylesheet" href="../suite.css">
+    <script src="../suite.js"></script>
 
     <script src="../data/database.js"></script>
     <script src="../data/recipes.js"></script>
@@ -1263,6 +1264,7 @@ function resetAll() {
 document.addEventListener('DOMContentLoaded', () => {
     searchSocketables(); // populate full socketable list on load
     buildAplGrid();
+    setTimeout(initCustomSelects, 0);
 });
 </script>
 </body>

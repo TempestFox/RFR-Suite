@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools of the Trade</title>
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#d4af37">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hunter's Companion">
     <link rel="stylesheet" href="../suite.css">
+    <script src="../suite.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="../data/equipment.js"></script>
     <script src="../data/database.js"></script>
     <script src="../data/recipes.js"></script>
@@ -32,6 +39,9 @@
         /* cb-destructive/overkill radio styles handled by suite.css */
         .cond-lbl.destructive span { color:var(--red); }
         .cond-lbl.overkill span { color:var(--gold); }
+        /* Override suite.css checkbox colour so destructive=red, overkill=gold */
+        .cond-lbl.destructive input[type=checkbox]:checked { background:rgba(231,76,60,.8); border-color:var(--red); box-shadow:0 0 8px rgba(231,76,60,.4); }
+        .cond-lbl.overkill   input[type=checkbox]:checked { background:rgba(212,175,55,.8); border-color:var(--gold); box-shadow:0 0 8px rgba(212,175,55,.4); }
 
         /* Tool cards */
         .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
@@ -217,8 +227,11 @@
         .ess-sel-btn.filled-tl::before { opacity:1; }
         .ess-sel-btn.filled-tl.anim::before { animation:fslotFlood .4s cubic-bezier(.4,0,.2,1) forwards; }
         .ess-sel-btn.filled-tl { background:var(--gold); color:#111 !important; border-color:var(--gold); border-style:solid; font-weight:700; animation:fslotFill .35s ease forwards; }
-        .ess-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--depth-inset); border:1px solid var(--gold); border-radius:var(--radius-sm); z-index:100; overflow:hidden; }
-        .ess-dropdown.open { display:block; }
+        /* Essence dropdown — fixed-position portal to escape any overflow clipping */
+        .ess-dropdown { position:fixed; background:var(--depth-inset); border:1px solid var(--gold); border-radius:var(--radius-sm); z-index:9999; overflow:hidden;
+            max-height:0; opacity:0; pointer-events:none;
+            transition: max-height .25s cubic-bezier(.4,0,.2,1), opacity .2s ease; }
+        .ess-dropdown.open { max-height:400px; opacity:1; pointer-events:auto; }
         .ess-opt { padding:10px 14px; cursor:pointer; font-size:.9em; transition:background .15s; text-align:center; }
         .ess-opt:hover { background:rgba(212,175,55,.1); color:var(--gold); }
         .ess-opt.chosen { color:var(--gold); font-weight:bold; background:rgba(212,175,55,.08); }
@@ -408,9 +421,66 @@
   </div>
 </div>
 
+<!-- Your Knowledge modal -->
+<div id="save-modal" class="modal-ov">
+  <div class="modal-bx" style="max-width:540px;">
+    <h2 style="color:var(--gold);margin-top:0;font-family:var(--font-display);font-size:1.6em;">Your Knowledge</h2>
+
+    <!-- Backup section -->
+    <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4);text-align:left;">
+      <div style="font-size:.75em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:var(--space-2);">Backup & Restore</div>
+      <p style="color:var(--text);font-size:.88em;line-height:1.6;margin:0 0 var(--space-3);">Download a full backup of your learned recipes, workshop progress, pinned items, and attempt history. To restore, click <strong>Restore from File</strong> and select your backup.</p>
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;">
+        <button class="nav-btn" style="color:var(--gold);border-color:var(--gold);" onclick="exportKnowledge()">Download Backup</button>
+        <button class="nav-btn" onclick="document.getElementById('restore-input').click()">Restore from File</button>
+      </div>
+      <input type="file" id="restore-input" accept=".json" style="display:none;" onchange="importKnowledge(event)">
+    </div>
+
+    <!-- Share section -->
+    <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4);text-align:left;">
+      <div style="font-size:.75em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:var(--space-2);">Share Recipes</div>
+      <p style="color:var(--text);font-size:.88em;line-height:1.6;margin:0 0 var(--space-3);">Generate a code containing your learned recipes. Share it with other players so they can add your recipes to their own list — their existing knowledge is kept.</p>
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-3);">
+        <button class="nav-btn" style="color:var(--green);border-color:var(--green);" onclick="generateShareCode()">Generate Code</button>
+        <button class="nav-btn" onclick="showImportCode()">Import Code</button>
+      </div>
+      <!-- Generated code display -->
+      <div id="share-code-wrap" style="display:none;">
+        <div style="font-size:.75em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:var(--space-2);">Your Share Code</div>
+        <div style="display:flex;gap:var(--space-2);align-items:stretch;">
+          <textarea id="share-code-out" readonly style="flex:1;font-family:monospace;font-size:.75em;background:var(--depth-deep);border:1px solid var(--border);color:var(--text);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);resize:none;height:72px;line-height:1.5;"></textarea>
+          <button class="nav-btn" id="copy-code-btn" style="color:var(--gold);border-color:var(--gold);flex-shrink:0;align-self:stretch;" onclick="copyShareCode()">Copy</button>
+        </div>
+        <!-- QR Code -->
+        <div id="share-qr-wrap" style="margin-top:var(--space-4);text-align:center;display:none;">
+          <div style="font-size:.75em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:var(--space-3);">Or scan with a phone</div>
+          <div style="display:inline-block;background:#1a1a1a;padding:12px;border-radius:var(--radius-md);border:2px solid var(--border);">
+            <div id="share-qr-container"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Import code input -->
+      <div id="import-code-wrap" style="display:none;">
+        <div style="font-size:.75em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:var(--space-2);">Paste Share Code</div>
+        <div style="display:flex;gap:var(--space-2);align-items:stretch;">
+          <textarea id="import-code-in" placeholder="Paste code here..." style="flex:1;font-family:monospace;font-size:.75em;background:var(--depth-deep);border:1px solid var(--border);color:var(--text);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);resize:none;height:72px;line-height:1.5;"></textarea>
+          <button class="nav-btn" style="color:var(--green);border-color:var(--green);flex-shrink:0;align-self:stretch;" onclick="importShareCode()">Import</button>
+        </div>
+        <div id="import-code-msg" style="font-size:.82em;margin-top:var(--space-2);min-height:1.2em;"></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;">
+      <button class="nav-btn" onclick="closeKnowledgeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="container">
   <div class="nav-header">
-    <button class="nav-btn" onclick="window.location.reload()">Reset &#10227;</button>
+    <button class="nav-btn" onclick="window.location.reload()">Reset</button>
+    <button class="nav-btn" style="color:var(--gold);border-color:var(--gold);" onclick="document.getElementById('save-modal').style.display='flex'">Your Knowledge</button>
   </div>
   <h1 class="page-title">Tools of the Trade</h1>
   <div class="page-subtitle">A Hunter's Guide to Harvesting and Artifice</div>
@@ -428,12 +498,12 @@
     <div class="target-module">
       <span class="target-label">Targeted Corpse</span>
       <div class="target-selects">
-        <select id="type-sel" onchange="loadModifiers()" style="flex:2;margin:0;"><option value="" disabled selected>— Select Base Type —</option></select>
-        <select id="size-sel" onchange="primeScanners()" style="flex:1;margin:0;">
+        <select id="type-sel" data-cs data-cs-gold onchange="loadModifiers()" style="flex:2;margin:0;"><option value="" disabled selected>— Select Base Type —</option></select>
+        <select id="size-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1;margin:0;">
           <option value="Tiny">Tiny</option><option value="Small">Small</option><option value="Medium" selected>Medium</option>
           <option value="Large">Large</option><option value="Huge">Huge</option><option value="Gargantuan">Gargantuan</option>
         </select>
-        <select id="ess-sel" onchange="primeScanners()" style="flex:1.5;margin:0;">
+        <select id="ess-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1.5;margin:0;">
           <option value="">— No Essence —</option>
           <option>Frail Essence</option><option>Robust Essence</option><option>Potent Essence</option>
           <option>Mythic Essence</option><option>Deific Essence</option>
@@ -446,8 +516,8 @@
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:var(--space-5);align-items:center;margin-top:var(--space-5);">
         <div></div>
         <div class="kill-conds">
-          <label class="cond-lbl destructive"><input type="radio" id="chk-dest" name="chk-dest" onchange="primeScanners()"><span>Destructive Kill</span></label>
-          <label class="cond-lbl overkill"><input type="radio" id="chk-over" name="chk-over" onchange="primeScanners()"><span>Massive Damage</span></label>
+          <label class="cond-lbl destructive"><input type="checkbox" id="chk-dest" onchange="primeScanners()"><span>Destructive Kill</span></label>
+          <label class="cond-lbl overkill"><input type="checkbox" id="chk-over" onchange="primeScanners()"><span>Massive Damage</span></label>
         </div>
         <div style="display:flex;gap:var(--space-3);">
           <button id="btn-cancel" class="nav-btn" style="display:none;color:var(--red);border-color:var(--red);" onclick="window.location.reload()">Abandon Harvest</button>
@@ -645,7 +715,7 @@
   <div id="t-recipes" class="tab-content">
     <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);">
       <input type="text" id="rb-search" placeholder="Search known recipes..." onkeyup="renderRB()" style="flex:2;">
-      <select id="rb-filter" onchange="renderRB()" style="flex:1;">
+      <select id="rb-filter" data-cs data-cs-gold onchange="renderRB()" style="flex:1;">
         <option value="All">All Categories</option><option value="Favorited">Favorited</option>
         <option value="Weapon">Weapons</option><option value="Armor">Armor</option>
         <option value="Wondrous">Wondrous Items</option><option value="Ring">Rings</option>
@@ -673,7 +743,7 @@
               <div style="background:var(--depth-inset);padding:var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:var(--space-4);">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
                   <label style="color:var(--muted);font-size:.8em;text-transform:uppercase;margin:0;">Essence Tier</label>
-                  <select id="cld-ess" onchange="updateMix()" style="width:55%;padding:8px 10px;font-size:.88em;">
+                  <select id="cld-ess" data-cs data-cs-gold onchange="updateMix()" style="width:55%;padding:8px 10px;font-size:.88em;">
                     <option value="Uncommon">Frail Essence</option><option value="Rare">Robust Essence</option>
                     <option value="Very Rare">Potent Essence</option><option value="Legendary">Mythic Essence</option>
                     <option value="Artifact">Deific Essence</option>
@@ -699,7 +769,7 @@
                   </label>
                   <div id="hlp-inputs" style="display:none;gap:var(--space-2);align-items:center;">
                     <input type="number" id="hlp-pb" placeholder="Helper PB" style="width:80px;padding:6px 8px;font-size:.85em;">
-                    <select id="hlp-prof" style="padding:6px 8px;font-size:.85em;">
+                    <select id="hlp-prof" data-cs data-cs-compact style="padding:6px 8px;font-size:.85em;">
                       <option value="full">Proficient (+Full PB)</option><option value="half">Not Proficient (+Half PB)</option>
                     </select>
                   </div>
@@ -717,13 +787,13 @@
       <div class="raw-panel">
         <h3 class="raw-ttl">The Raw Diet</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4);">
-          <select id="raw-type" style="margin:0;"><option value="" disabled selected>Creature Type...</option>
+          <select id="raw-type" data-cs data-cs-gold style="margin:0;"><option value="" disabled selected>Creature Type...</option>
             <option>Aberration</option><option>Beast</option><option>Celestial</option><option>Construct</option>
             <option>Dragon</option><option>Elemental</option><option>Fey</option><option>Fiend</option>
             <option>Giant</option><option>Humanoid</option><option>Monstrosity</option><option>Ooze</option>
             <option>Plant</option><option>Undead</option>
           </select>
-          <select id="raw-comp" style="margin:0;"><option value="" disabled selected>Edible Part...</option>
+          <select id="raw-comp" data-cs data-cs-gold style="margin:0;"><option value="" disabled selected>Edible Part...</option>
             <option>Blood</option><option>Bone</option><option>Brain</option><option>Egg</option><option>Eye</option>
             <option>Fat</option><option>Flesh</option><option>Heart</option><option>Liver</option><option>Spice</option>
           </select>
@@ -890,6 +960,7 @@ window.onload=()=>{
     const s=document.getElementById('type-sel');
     Object.keys(creatureData).sort().forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);
     renderWS(); renderRB();
+    setTimeout(initCustomSelects, 0);
 };
 
 function switchTab(id,btn){
@@ -1058,7 +1129,9 @@ function initHarvest(){
     document.getElementById('helper-max').innerText=`${maxH} Max`;
     const hw=document.getElementById('helpers-wrap'); hw.innerHTML='';
     if(!maxH) hw.innerHTML=`<div style="color:var(--muted);font-size:.85em;text-align:center;padding:20px;font-style:italic;">No helpers for this size.</div>`;
-    else for(let i=1;i<=maxH;i++) hw.innerHTML+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="6" min="2"><select id="hpr-${i}" style="flex:1;padding:6px 8px;font-size:.85em;"><option value="half">Not Proficient (+Half PB)</option><option value="full">Proficient (+Full PB)</option></select></div>`;
+    else for(let i=1;i<=maxH;i++) hw.innerHTML+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="6" min="2"><select id="hpr-${i}" data-cs data-cs-compact style="flex:1;padding:6px 8px;font-size:.85em;"><option value="half">Not Proficient (+Half PB)</option><option value="full">Proficient (+Full PB)</option></select></div>`;
+    // Upgrade the dynamically generated helper selects to custom dropdowns
+    for(let i=1;i<=maxH;i++){const el=document.getElementById(`hpr-${i}`);if(el)upgradeSelect(el);}
     renderHTables();
 }
 
@@ -1393,7 +1466,16 @@ function setWsComp(c){
 
 function toggleEssDrop(e){
     e.stopPropagation();
-    let dd=document.getElementById('ess-dropdown'); dd.classList.toggle('open');
+    let dd=document.getElementById('ess-dropdown');
+    let btn=document.getElementById('ess-sel-btn');
+    let isOpen=dd.classList.contains('open');
+    if(!isOpen){
+        let r=btn.getBoundingClientRect();
+        dd.style.left=r.left+'px';
+        dd.style.top=(r.bottom+4)+'px';
+        dd.style.width=r.width+'px';
+    }
+    dd.classList.toggle('open');
 }
 function selectEss(val){
     let btn=document.getElementById('ess-sel-btn'), dd=document.getElementById('ess-dropdown');
@@ -1621,6 +1703,7 @@ function buildCldConfig(rn){
         </div>`;
     });
     document.getElementById('ing-list').innerHTML=ih;
+    document.querySelectorAll('.cld-st').forEach(upgradeSelect);
     document.getElementById('cook-roll').value='';
     document.getElementById('hlp-chk').checked=false; toggleCookHelper();
     document.getElementById('cook-out').style.display='none';
@@ -1848,6 +1931,134 @@ function skResolve() {
 // Init socketing list on load
 document.addEventListener('DOMContentLoaded', () => { skSearch(); });
 
+// ── Save / Restore / Share Knowledge ──────────────────────────────────────
+function closeKnowledgeModal() {
+    document.getElementById('save-modal').style.display = 'none';
+    document.getElementById('share-code-wrap').style.display = 'none';
+    document.getElementById('import-code-wrap').style.display = 'none';
+    document.getElementById('share-qr-wrap').style.display = 'none';
+    document.getElementById('share-qr-container').innerHTML = '';
+    document.getElementById('import-code-in').value = '';
+    document.getElementById('import-code-msg').textContent = '';
+    document.getElementById('copy-code-btn').textContent = 'Copy';
+}
+
+function exportKnowledge() {
+    const data = {
+        version: 1,
+        exported: new Date().toISOString(),
+        learnedRecipes: JSON.parse(localStorage.getItem('learnedRecipes') || '[]'),
+        pinnedRecipes:  JSON.parse(localStorage.getItem('pinnedRecipes')  || '[]'),
+        wsData:         JSON.parse(localStorage.getItem('wsData')         || '{}'),
+        attemptHistory: JSON.parse(localStorage.getItem('attemptHistory') || '{}'),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `hunters-knowledge-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importKnowledge(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.version !== 1) { alert('Unrecognised backup format.'); return; }
+            if (data.learnedRecipes) localStorage.setItem('learnedRecipes', JSON.stringify(data.learnedRecipes));
+            if (data.pinnedRecipes)  localStorage.setItem('pinnedRecipes',  JSON.stringify(data.pinnedRecipes));
+            if (data.wsData)         localStorage.setItem('wsData',         JSON.stringify(data.wsData));
+            if (data.attemptHistory) localStorage.setItem('attemptHistory', JSON.stringify(data.attemptHistory));
+            closeKnowledgeModal();
+            alert('Knowledge restored! The page will now reload.');
+            window.location.reload();
+        } catch(err) {
+            alert('Failed to read backup file. Please make sure it\'s a valid knowledge backup.');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function generateShareCode() {
+    const recipes = JSON.parse(localStorage.getItem('learnedRecipes') || '[]');
+    if (!recipes.length) {
+        document.getElementById('share-code-wrap').style.display = 'none';
+        document.getElementById('import-code-wrap').style.display = 'none';
+        alert('You have no learned recipes to share yet.');
+        return;
+    }
+    const payload = JSON.stringify({ v: 1, r: recipes });
+    const code    = btoa(unescape(encodeURIComponent(payload)));
+    document.getElementById('share-code-out').value = code;
+    document.getElementById('share-code-wrap').style.display = 'block';
+    document.getElementById('import-code-wrap').style.display = 'none';
+    document.getElementById('copy-code-btn').textContent = 'Copy';
+
+    // Render QR code — encodes the raw share code for manual copy after scanning
+    const qrWrap = document.getElementById('share-qr-wrap');
+    const qrContainer = document.getElementById('share-qr-container');
+    qrContainer.innerHTML = '';
+    qrWrap.style.display = 'none';
+    if (typeof QRCode !== 'undefined') {
+        qrWrap.style.display = 'block';
+        new QRCode(qrContainer, {
+            text: code,
+            width: 200,
+            height: 200,
+            colorDark: '#d4af37',
+            colorLight: '#1a1a1a',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }
+}
+
+function copyShareCode() {
+    const code = document.getElementById('share-code-out').value;
+    navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('copy-code-btn').textContent = 'Copied!';
+        setTimeout(() => document.getElementById('copy-code-btn').textContent = 'Copy', 2000);
+    }).catch(() => {
+        document.getElementById('share-code-out').select();
+        document.execCommand('copy');
+        document.getElementById('copy-code-btn').textContent = 'Copied!';
+        setTimeout(() => document.getElementById('copy-code-btn').textContent = 'Copy', 2000);
+    });
+}
+
+function showImportCode() {
+    document.getElementById('import-code-wrap').style.display = 'block';
+    document.getElementById('share-code-wrap').style.display = 'none';
+    document.getElementById('import-code-in').focus();
+}
+
+function importShareCode() {
+    const raw = document.getElementById('import-code-in').value.trim();
+    const msg = document.getElementById('import-code-msg');
+    if (!raw) { msg.style.color = 'var(--red)'; msg.textContent = 'Please paste a share code first.'; return; }
+    try {
+        const payload  = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (payload.v !== 1 || !Array.isArray(payload.r)) throw new Error('bad format');
+        const incoming = payload.r;
+        const existing = JSON.parse(localStorage.getItem('learnedRecipes') || '[]');
+        const merged   = [...new Set([...existing, ...incoming])];
+        const added    = merged.length - existing.length;
+        localStorage.setItem('learnedRecipes', JSON.stringify(merged));
+        msg.style.color = 'var(--green)';
+        msg.textContent = added > 0
+            ? `${added} recipe${added !== 1 ? 's' : ''} added to your knowledge!`
+            : 'No new recipes — you already know everything in this code.';
+        if (typeof renderRB === 'function') renderRB();
+    } catch(err) {
+        msg.style.color = 'var(--red)';
+        msg.textContent = 'Invalid code. Please check it was copied correctly.';
+    }
+}
+
 // ── Tooltip ────────────────────────────────────────────────────────────────
 const tt=document.getElementById('gtip');
 document.addEventListener('mouseover',e=>{
@@ -1865,6 +2076,16 @@ document.addEventListener('mouseover',e=>{
 });
 document.addEventListener('mousemove',e=>{tt.style.left=(e.clientX+15)+'px';tt.style.top=(e.clientY+15)+'px';});
 document.addEventListener('mouseout',e=>{let el=e.target;if(el.classList.contains('prof-tip')||el.classList.contains('q-item')||el.classList.contains('tooltip-trigger')){tt.style.visibility='hidden';tt.style.opacity='0';}});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../service-worker.js', { scope: '/RFR-Suite/' })
+            .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+            .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+}
 </script>
 </body>
 </html>

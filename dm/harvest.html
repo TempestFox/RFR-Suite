@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Harvester — DM Suite</title>
     <link rel="stylesheet" href="../suite.css">
+    <script src="../suite.js"></script>
 
     <script src="../data/database.js"></script>
     <script src="../data/equipment.js"></script>
@@ -147,6 +148,8 @@
         .controls-row .cb-destructive { color: var(--red); }
         .controls-row .cb-overkill    { color: var(--gold); }
         /* cb-destructive/overkill radio styles handled by suite.css */
+        .cb-destructive input[type=checkbox]:checked { background:rgba(231,76,60,.8); border-color:var(--red); box-shadow:0 0 8px rgba(231,76,60,.4); }
+        .cb-overkill   input[type=checkbox]:checked  { background:rgba(212,175,55,.8); border-color:var(--gold); box-shadow:0 0 8px rgba(212,175,55,.4); }
         .controls-row .time-badge     { padding-bottom: 2px; }
 
         /* ── DRAG-REORDER QUEUE ─────────────────────────────────────── */
@@ -328,11 +331,11 @@
             </div>
 
             <label class="checkbox-label cb-destructive" style="background:none;border:none;padding:0;font-size:0.85em;gap:var(--space-2);">
-                <input type="radio" id="toggle-destructive" name="toggle-destructive">
+                <input type="checkbox" id="toggle-destructive">
                 <span>Destructive Kill</span>
             </label>
             <label class="checkbox-label cb-overkill" style="background:none;border:none;padding:0;font-size:0.85em;gap:var(--space-2);">
-                <input type="radio" id="toggle-overkill" name="toggle-overkill">
+                <input type="checkbox" id="toggle-overkill">
                 <span>Massive Damage</span>
             </label>
 
@@ -506,6 +509,7 @@ function init() {
         sel.innerHTML += `<option value="${c}">${c}</option>`;
     });
     updateHarvestTimeAndHelpers();
+    setTimeout(initCustomSelects, 0);
 }
 
 // ── Controls ──────────────────────────────────────────────────────────────
@@ -563,11 +567,15 @@ function updateHarvestTimeAndHelpers() {
         container.innerHTML += `
             <div class="roll-row" style="gap:var(--space-2);">
                 <input type="number" id="helper-pb-${i}" placeholder="PB" style="width:52px; padding:5px 6px; font-size:0.85em; text-align:center; border-color:rgba(52,152,219,0.4); flex-shrink:0;">
-                <select id="helper-prof-${i}" style="flex:1; padding:5px 6px; font-size:0.82em;">
+                <select id="helper-prof-${i}" data-cs-compact style="flex:1; padding:5px 6px; font-size:0.82em;">
                     <option value="half">Nonproficient</option>
                     <option value="full">Proficient</option>
                 </select>
             </div>`;
+    }
+    for (let i = 1; i <= max; i++) {
+        const el = document.getElementById(`helper-prof-${i}`);
+        if (el) upgradeSelect(el);
     }
 }
 

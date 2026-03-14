@@ -6,7 +6,7 @@
     <title>Heliana's Hunter Suite — DM</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#2ecc71">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -126,9 +126,9 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js', { scope: '/dm/' })
-                    .then(reg => console.log('[SW:DM] Registered, scope:', reg.scope))
-                    .catch(err => console.warn('[SW:DM] Registration failed:', err));
+                navigator.serviceWorker.register('../service-worker.js', { scope: '/RFR-Suite/' })
+                    .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+                    .catch(err => console.warn('[SW] Registration failed:', err));
             });
         }
     </script>
