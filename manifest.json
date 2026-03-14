@@ -2,7 +2,7 @@
   "name": "Hunter's Companion",
   "short_name": "Companion",
   "description": "Player-facing harvesting and crafting tool for Heliana's Guide to Monster Hunting.",
-  "start_url": "/RFR-Suite/player/index.html",
+  "start_url": "/RFR-Suite/",
   "scope": "/RFR-Suite/",
   "display": "standalone",
   "background_color": "#1a1a1a",

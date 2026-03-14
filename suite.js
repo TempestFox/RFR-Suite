@@ -51,10 +51,21 @@
         var panel = wrap.querySelector('.cs-dropdown');
         if (!btn || !panel) return;
         var r = btn.getBoundingClientRect();
+        var dropHeight = 260; // approximate max panel height
+        var spaceBelow = window.innerHeight - (r.bottom + 4);
+        var spaceAbove = r.top - 4;
         panel.style.left     = r.left + 'px';
-        panel.style.top      = (r.bottom + 4) + 'px';
         panel.style.width    = r.width + 'px';
         panel.style.minWidth = Math.max(r.width, 140) + 'px';
+        if (spaceBelow >= dropHeight || spaceBelow >= spaceAbove) {
+            // enough room below — drop down
+            panel.style.top    = (r.bottom + 4) + 'px';
+            panel.style.bottom = 'auto';
+        } else {
+            // not enough room — drop up
+            panel.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+            panel.style.top    = 'auto';
+        }
     }
 
     function openDropdown(wrap) {

@@ -1471,9 +1471,20 @@ function toggleEssDrop(e){
     let isOpen=dd.classList.contains('open');
     if(!isOpen){
         let r=btn.getBoundingClientRect();
+        const dropHeight=240; // approximate height of open dropdown
+        const spaceBelow=window.innerHeight-(r.bottom+4);
+        const spaceAbove=r.top-4;
         dd.style.left=r.left+'px';
-        dd.style.top=(r.bottom+4)+'px';
         dd.style.width=r.width+'px';
+        if(spaceBelow>=dropHeight||spaceBelow>=spaceAbove){
+            // enough room below — drop down
+            dd.style.top=(r.bottom+4)+'px';
+            dd.style.bottom='auto';
+        } else {
+            // not enough room — drop up
+            dd.style.bottom=(window.innerHeight-r.top+4)+'px';
+            dd.style.top='auto';
+        }
     }
     dd.classList.toggle('open');
 }
