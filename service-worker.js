@@ -1,7 +1,7 @@
 // Hunter's Companion — Service Worker
 // CACHE_VERSION is automatically updated by GitHub Actions on every push.
 // Do not edit this line manually.
-const CACHE_VERSION = 'v20260314-0936';
+const CACHE_VERSION = 'v1';
 const CACHE_NAME = `hunters-companion-${CACHE_VERSION}`;
 const BASE = '/RFR-Suite';
 
@@ -22,12 +22,10 @@ const FILES_TO_CACHE = [
   // Icons
   `${BASE}/icons/player-icon-192.png`,
   `${BASE}/icons/player-icon-512.png`,
-  `${BASE}/icons/dm-icon-192.png`,
-  `${BASE}/icons/dm-icon-512.png`,
+  `${BASE}/icons/apple-touch-icon.png`,
 
   // Player tool
   `${BASE}/player/index.html`,
-  `${BASE}/player/manifest.json`,
 
   // DM tools
   `${BASE}/dm/index.html`,
