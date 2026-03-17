@@ -335,6 +335,15 @@
         .synth-ds { color:var(--text); font-size:.95em; line-height:1.6; margin-bottom:var(--space-6); }
         .synth-cd { font-family:monospace; color:var(--red); font-size:1em; margin-bottom:var(--space-4); display:none; }
 
+        /* View transition — fade + grow up from below */
+        @keyframes viewEnter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .view-enter { animation: viewEnter .35s cubic-bezier(.4,0,.2,1) forwards; }
+
+        /* Mobile abandon bar */
+        #mobile-abandon-bar { padding: var(--space-3) 0 0; }
+        #target-setup { transition: max-height .4s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+        #target-setup.target-collapsed { display: none; }
+
         /* Harvest modal */
         .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .modal-bx { background:var(--depth-inset); border:2px solid var(--gold); padding:40px; border-radius:var(--radius-md); text-align:center; max-width:480px; box-shadow:0 0 40px rgba(212,175,55,.14); }
@@ -393,6 +402,183 @@
         .add-btn:hover { background:var(--green); color:#111; }
         .rm-btn { background:transparent; color:var(--red); border:none; font-size:1.2em; cursor:pointer; padding:0 4px; transition:transform .2s; }
         .rm-btn:hover { transform:scale(1.2); }
+        /* ── MOBILE: Field Tools ────────────────────────────────────── */
+        @media (max-width: 600px) {
+
+            /* ── Page chrome ── */
+            .container { padding: var(--space-4) var(--space-3); }
+            h1.page-title { font-size: 1.4rem; letter-spacing: 1px; margin-bottom: 2px; }
+            .page-subtitle { font-size: .8em; margin-bottom: var(--space-4); }
+
+            /* ── Nav ── */
+            .nav-header { margin-bottom: var(--space-3); }
+            .nav-btn { font-size: .7em; padding: 5px 10px; }
+
+            /* ── Tab bar — horizontal scroll, no wrap ── */
+            .tab-bar {
+                justify-content: flex-start;
+                overflow-x: auto;
+                overflow-y: visible;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex-wrap: nowrap;
+                margin-left: calc(var(--space-3) * -1);
+                margin-right: calc(var(--space-3) * -1);
+                padding: 0 var(--space-3);
+                margin-bottom: var(--space-5);
+            }
+            .tab-bar::-webkit-scrollbar { display: none; }
+            .tab-btn { font-size: .75em; padding: 10px 16px; white-space: nowrap; flex-shrink: 0; }
+
+            /* ── Target module ── */
+            .target-module { padding: var(--space-4) var(--space-3); }
+            .target-selects { flex-direction: column; gap: var(--space-2); }
+            .target-selects .cs-wrap:first-child { flex: none; width: 100%; }
+            .target-selects .cs-wrap:nth-child(2),
+            .target-selects .cs-wrap:nth-child(3) { flex: none; width: 100%; }
+
+            /* Two-across row for size + essence */
+            .target-selects {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-2);
+            }
+            .target-selects .cs-wrap:first-child {
+                grid-column: 1 / -1;
+            }
+
+            /* Kill conditions — stack if needed */
+            .kill-conds { gap: var(--space-3); padding: var(--space-2) var(--space-3); }
+            .cond-lbl { font-size: .78em; }
+
+            /* Bottom row of target module — stack on mobile */
+            #t-field .target-module > div[style*="grid-template-columns:1fr auto 1fr"] {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-3);
+            }
+            #btn-cancel, #btn-new { display: inline-flex !important; }
+
+            /* ── Scanner carousel ── */
+            #v-scan .tool-grid {
+                display: block;
+                position: relative;
+                overflow: hidden;
+                touch-action: pan-y;
+            }
+
+            #v-scan .tool-grid .tool-card {
+                position: absolute;
+                top: 0; left: 0; right: 0;
+                min-height: 300px;
+                transition: transform .35s cubic-bezier(.4,0,.2,1);
+                width: 100%;
+            }
+
+            /* Set static height on the grid to match card height */
+            #v-scan .tool-grid { min-height: 300px; }
+
+            /* Carousel dots */
+            .carousel-dots {
+                display: flex;
+                justify-content: center;
+                gap: var(--space-2);
+                margin-top: var(--space-3);
+            }
+            .carousel-dot {
+                width: 8px; height: 8px;
+                border-radius: 50%;
+                background: var(--border);
+                transition: background .2s, transform .2s;
+            }
+            .carousel-dot.active {
+                background: var(--gold);
+                transform: scale(1.3);
+            }
+
+            /* Swipe hint label */
+            .carousel-hint {
+                text-align: center;
+                font-size: .7em;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-top: var(--space-2);
+            }
+
+            /* ── Ready module ── */
+            .ready-wrap { padding: var(--space-4) var(--space-3); }
+            .ready-checks { gap: var(--space-4); flex-wrap: wrap; justify-content: center; }
+            .dual-btn { font-size: .9em; padding: 16px var(--space-4); }
+
+            /* ── Harvest view — stack panels ── */
+            #v-harvest .tool-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-4);
+            }
+            .hpanel-fixed { height: 280px; }
+
+            /* Checks + helpers — stack ── */
+            #v-harvest .tool-grid[style*="align-items:start"] {
+                grid-template-columns: 1fr;
+            }
+
+            /* ── Results view — stack ── */
+            #v-results .tool-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-4);
+            }
+
+            /* ── Modal — mobile sizing ── */
+            .modal-ov { align-items: flex-end; padding-bottom: 0; }
+            .modal-bx {
+                padding: var(--space-5) var(--space-4);
+                border-radius: var(--radius-md) var(--radius-md) 0 0;
+                max-width: 100%;
+                width: 100%;
+                max-height: 85vh;
+                overflow-y: auto;
+                box-sizing: border-box;
+                margin: 0;
+            }
+
+            /* ── Collapsible panels ── */
+            .collapsible-title { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+            .panel-chevron { font-size: .8em; transition: transform .25s; color: var(--muted); }
+            .collapsible-title.collapsed .panel-chevron { transform: rotate(-90deg); }
+            .collapsible-body { overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1), opacity .25s ease; }
+            .collapsible-title.collapsed + .collapsible-body { max-height: 0 !important; opacity: 0; }
+
+            /* ── Harvest checks mobile redesign ── */
+            .check-block { padding: var(--space-3); }
+            .check-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-2);
+                background: var(--depth-deep);
+                border-radius: var(--radius-sm);
+                padding: var(--space-3);
+                margin-bottom: var(--space-2);
+                border: 1px solid var(--border-subtle);
+            }
+            .ck-lbl {
+                grid-column: 1 / -1;
+                font-size: .7em;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--muted);
+                min-width: unset;
+                margin-bottom: 2px;
+            }
+            .ck-val  { font-size: 1.1em; color: var(--gold); font-weight: bold; align-self: center; }
+            .ck-form { font-size: .78em; color: var(--muted); grid-column: 1 / -1; margin-top: 2px; }
+            .prof-tip { display: none; } /* hide tooltip icon on mobile */
+
+            /* ── Harvest checks panel ── */
+            .check-row { flex-wrap: wrap; gap: var(--space-2); }
+            .ck-form { width: 100%; margin-top: 2px; }
+        }
     </style>
 </head>
 <body>
@@ -493,42 +679,51 @@
     <button class="tab-btn" onclick="switchTab('t-socketing',this)">Socketing</button>
   </div>
 
-  <!-- FIELD TOOLS -->
-  <div id="t-field" class="tab-content active">
-    <div class="target-module">
+    <div id="t-field" class="tab-content active">
+    <div class="target-module" id="target-module">
       <span class="target-label">Targeted Corpse</span>
-      <div class="target-selects">
-        <select id="type-sel" data-cs data-cs-gold onchange="loadModifiers()" style="flex:2;margin:0;"><option value="" disabled selected>— Select Base Type —</option></select>
-        <select id="size-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1;margin:0;">
-          <option value="Tiny">Tiny</option><option value="Small">Small</option><option value="Medium" selected>Medium</option>
-          <option value="Large">Large</option><option value="Huge">Huge</option><option value="Gargantuan">Gargantuan</option>
-        </select>
-        <select id="ess-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1.5;margin:0;">
-          <option value="">— No Essence —</option>
-          <option>Frail Essence</option><option>Robust Essence</option><option>Potent Essence</option>
-          <option>Mythic Essence</option><option>Deific Essence</option>
-        </select>
-      </div>
-      <div id="mod-wrap" style="display:none;max-width:800px;margin:var(--space-4) auto 0;">
-        <div style="font-size:.8em;color:var(--muted);margin-bottom:var(--space-2);">Specific Modifiers (select multiple):</div>
-        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);justify-content:center;" id="mod-pills"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:var(--space-5);align-items:center;margin-top:var(--space-5);">
-        <div></div>
-        <div class="kill-conds">
-          <label class="cond-lbl destructive"><input type="checkbox" id="chk-dest" onchange="primeScanners()"><span>Destructive Kill</span></label>
-          <label class="cond-lbl overkill"><input type="checkbox" id="chk-over" onchange="primeScanners()"><span>Massive Damage</span></label>
+      <!-- Collapsible setup area — collapses on mobile when harvest begins -->
+      <div id="target-setup">
+        <div class="target-selects">
+          <select id="type-sel" data-cs data-cs-gold onchange="loadModifiers()" style="flex:2;margin:0;"><option value="" disabled selected>— Select Base Type —</option></select>
+          <select id="size-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1;margin:0;">
+            <option value="Tiny">Tiny</option><option value="Small">Small</option><option value="Medium" selected>Medium</option>
+            <option value="Large">Large</option><option value="Huge">Huge</option><option value="Gargantuan">Gargantuan</option>
+          </select>
+          <select id="ess-sel" data-cs data-cs-gold onchange="primeScanners()" style="flex:1.5;margin:0;">
+            <option value="">— No Essence —</option>
+            <option>Frail Essence</option><option>Robust Essence</option><option>Potent Essence</option>
+            <option>Mythic Essence</option><option>Deific Essence</option>
+          </select>
         </div>
-        <div style="display:flex;gap:var(--space-3);">
-          <button id="btn-cancel" class="nav-btn" style="display:none;color:var(--red);border-color:var(--red);" onclick="window.location.reload()">Abandon Harvest</button>
-          <button id="btn-new"    class="nav-btn" style="display:none;color:var(--gold);border-color:var(--gold);" onclick="window.location.reload()">New Harvest &#10227;</button>
+        <div id="mod-wrap" style="display:none;max-width:800px;margin:var(--space-4) auto 0;">
+          <div style="font-size:.8em;color:var(--muted);margin-bottom:var(--space-2);">Specific Modifiers (select multiple):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);justify-content:center;" id="mod-pills"></div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:var(--space-5);align-items:center;margin-top:var(--space-5);">
+          <div></div>
+          <div class="kill-conds">
+            <label class="cond-lbl destructive"><input type="checkbox" id="chk-dest" onchange="primeScanners()"><span>Destructive Kill</span></label>
+            <label class="cond-lbl overkill"><input type="checkbox" id="chk-over" onchange="primeScanners()"><span>Massive Damage</span></label>
+          </div>
+          <div style="display:flex;gap:var(--space-3);">
+            <button id="btn-new" class="nav-btn" style="display:none;color:var(--gold);border-color:var(--gold);" onclick="window.location.reload()">New Harvest</button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile-only abandon bar — shown when harvest is active -->
+      <div id="mobile-abandon-bar" style="display:none;">
+        <button class="nav-btn" style="width:100%;color:var(--red);border-color:var(--red);justify-content:center;" onclick="window.location.reload()">Abandon Harvest</button>
+      </div>
+      <!-- Desktop abandon button — hidden on mobile -->
+      <div id="desktop-abandon" style="display:none;margin-top:var(--space-3);text-align:right;">
+        <button id="btn-cancel" class="nav-btn" style="color:var(--red);border-color:var(--red);" onclick="window.location.reload()">Abandon Harvest</button>
       </div>
     </div>
 
     <!-- Scanner cards -->
     <div id="v-scan">
-      <div class="tool-grid">
+      <div class="tool-grid" id="scanner-carousel">
         <div id="card-book" class="tool-card">
           <h2 class="card-hdr green">The Book</h2>
           <div id="mask-book" class="card-mask" onclick="execBook()">Offline</div>
@@ -547,6 +742,12 @@
           </div>
         </div>
       </div>
+      <!-- Mobile carousel controls — hidden on desktop via JS check -->
+      <div class="carousel-dots" id="carousel-dots">
+        <div class="carousel-dot active" onclick="carouselGoTo(0)"></div>
+        <div class="carousel-dot" onclick="carouselGoTo(1)"></div>
+      </div>
+      <div class="carousel-hint" id="carousel-hint">Swipe to switch tools</div>
 
       <div class="ready-wrap" id="ready-mod" style="display:none;">
         <div class="ready-checks">
@@ -574,21 +775,29 @@
     <div id="v-harvest" style="display:none;">
       <div class="tool-grid" style="margin-bottom:var(--space-6);">
         <div class="hpanel hpanel-fixed" style="border-color:var(--green);">
-          <h2 class="hpanel-title" style="color:var(--green);">Harvest List</h2>
-          <table class="htbl"><thead><tr>
-            <th style="color:var(--green);width:45%;">Component</th>
-            <th style="color:var(--green);width:12%;">DC</th>
-            <th style="color:var(--green);width:23%;">Tags</th>
-            <th style="color:var(--green);width:20%;">Action</th>
-          </tr></thead></table>
-          <div class="htbl-scroll-wrap"><table class="htbl"><tbody id="hlist-body"></tbody></table></div>
+          <h2 class="hpanel-title collapsible-title" style="color:var(--green);" onclick="togglePanel(this)">
+            Harvest List <span class="panel-chevron">▾</span>
+          </h2>
+          <div class="collapsible-body">
+            <table class="htbl"><thead><tr>
+              <th style="color:var(--green);width:45%;">Component</th>
+              <th style="color:var(--green);width:12%;">DC</th>
+              <th style="color:var(--green);width:23%;">Tags</th>
+              <th style="color:var(--green);width:20%;">Action</th>
+            </tr></thead></table>
+            <div class="htbl-scroll-wrap"><table class="htbl"><tbody id="hlist-body"></tbody></table></div>
+          </div>
         </div>
         <div class="hpanel hpanel-fixed" style="border-color:var(--gold);">
-          <h2 class="hpanel-title" style="color:var(--gold);">Harvest Order</h2>
-          <div class="htbl-scroll-wrap"><div id="horder-body" style="position:relative;user-select:none;min-height:40px;"></div></div>
-          <div style="text-align:right;padding-top:var(--space-3);border-top:1px dashed var(--border);margin-top:auto;">
-            <span style="color:var(--muted);">Target DC: </span>
-            <strong style="color:var(--gold);font-size:1.4em;" id="total-dc">0</strong>
+          <h2 class="hpanel-title collapsible-title" style="color:var(--gold);" onclick="togglePanel(this)">
+            Harvest Order <span class="panel-chevron">▾</span>
+          </h2>
+          <div class="collapsible-body">
+            <div class="htbl-scroll-wrap"><div id="horder-body" style="position:relative;user-select:none;min-height:40px;"></div></div>
+            <div style="text-align:right;padding-top:var(--space-3);border-top:1px dashed var(--border);margin-top:auto;">
+              <span style="color:var(--muted);">Target DC: </span>
+              <strong style="color:var(--gold);font-size:1.4em;" id="total-dc">0</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -615,8 +824,8 @@
               <span>Checks</span>
             </div>
             <div class="roll-box">
-              <div class="roll-row"><label class="roll-lbl">Assessment Roll</label><input type="number" id="roll-assess" placeholder="e.g. 14" class="roll-fld"></div>
-              <div class="roll-row"><label class="roll-lbl">Carving Roll</label><input type="number" id="roll-carve" placeholder="e.g. 18" class="roll-fld"></div>
+              <div class="roll-row"><label class="roll-lbl">Assessment Roll</label><input type="number" id="roll-assess" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Assessment Roll" readonly></div>
+              <div class="roll-row"><label class="roll-lbl">Carving Roll</label><input type="number" id="roll-carve" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Carving Roll" readonly></div>
             </div>
           </div>
           <div>
@@ -760,7 +969,7 @@
               <div class="roll-box">
                 <div class="roll-row">
                   <label class="roll-lbl">Your Roll</label>
-                  <input type="number" id="cook-roll" placeholder="Enter total" class="roll-fld" style="width:110px;">
+                  <input type="number" id="cook-roll" placeholder="—" class="roll-fld" style="width:110px;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Cooking Roll" readonly>
                 </div>
                 <div class="roll-row" style="align-items:center;">
                   <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:.88em;color:var(--green);font-weight:bold;text-transform:uppercase;letter-spacing:.5px;">
@@ -768,7 +977,7 @@
                     Have a Helper?
                   </label>
                   <div id="hlp-inputs" style="display:none;gap:var(--space-2);align-items:center;">
-                    <input type="number" id="hlp-pb" placeholder="Helper PB" style="width:80px;padding:6px 8px;font-size:.85em;">
+                    <input type="number" id="hlp-pb" placeholder="PB" style="width:80px;padding:6px 8px;font-size:.85em;" data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper PB" readonly>
                     <select id="hlp-prof" data-cs data-cs-compact style="padding:6px 8px;font-size:.85em;">
                       <option value="full">Proficient (+Full PB)</option><option value="half">Not Proficient (+Half PB)</option>
                     </select>
@@ -797,8 +1006,8 @@
             <option>Blood</option><option>Bone</option><option>Brain</option><option>Egg</option><option>Eye</option>
             <option>Fat</option><option>Flesh</option><option>Heart</option><option>Liver</option><option>Spice</option>
           </select>
-          <input type="number" id="raw-con" placeholder="Your CON Modifier" style="margin:0;">
-          <input type="number" id="raw-roll" placeholder="Total Save Result"  style="margin:0;">
+          <input type="number" id="raw-con" placeholder="CON Mod" style="margin:0;" data-drum data-drum-min="-5" data-drum-max="10" data-drum-start="0" data-drum-label="CON Modifier" readonly>
+          <input type="number" id="raw-roll" placeholder="Save Result" style="margin:0;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Save Result" readonly>
         </div>
         <div class="raw-crit">
           <label class="raw-crit-lbl"><input type="radio" name="rcrit" value="none" checked><span>Normal Roll</span></label>
@@ -859,7 +1068,7 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); align-items:flex-end;">
         <div>
           <label>Your Roll (d20 + ability mod + prof)</label>
-          <input type="number" id="sk-roll" placeholder="e.g. 12" min="1" max="40">
+          <input type="number" id="sk-roll" placeholder="—" min="1" max="100" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Removal Roll" readonly>
         </div>
         <div>
           <button class="btn-primary" style="width:100%; margin:0;" onclick="skResolve()">Resolve Removal</button>
@@ -972,6 +1181,56 @@ function switchTab(id,btn){
     if(id==='t-cauldron') renderCauldron();
 }
 
+function togglePanel(titleEl){
+    if(window.innerWidth > 600) return; // desktop — no collapse
+    const body = titleEl.nextElementSibling;
+    const isCollapsed = titleEl.classList.contains('collapsed');
+    if(isCollapsed){
+        body.style.maxHeight = body.scrollHeight + 'px';
+        body.style.opacity   = '1';
+        titleEl.classList.remove('collapsed');
+    } else {
+        body.style.maxHeight = body.scrollHeight + 'px'; // set explicit height first
+        requestAnimationFrame(()=>{
+            body.style.maxHeight = '0';
+            body.style.opacity   = '0';
+        });
+        titleEl.classList.add('collapsed');
+    }
+}
+
+function collapseTargetModuleMobile(){
+    if(window.innerWidth > 600) return;
+    const ts = document.getElementById('target-setup');
+    const mb = document.getElementById('mobile-abandon-bar');
+    if(!ts || ts.classList.contains('target-collapsed')) return;
+    ts.style.maxHeight  = ts.scrollHeight + 'px';
+    ts.style.overflow   = 'hidden';
+    ts.style.opacity    = '1';
+    requestAnimationFrame(()=>{
+        ts.style.transition = 'max-height .4s cubic-bezier(.4,0,.2,1), opacity .3s ease';
+        ts.style.maxHeight  = '0';
+        ts.style.opacity    = '0';
+    });
+    setTimeout(()=>{
+        ts.classList.add('target-collapsed');
+        if(mb) mb.style.display = 'block';
+    }, 420);
+}
+
+function toggleProfBtn(btn){
+    var isFull = btn.dataset.state === 'half';
+    btn.dataset.state = isFull ? 'full' : 'half';
+    btn.textContent   = isFull ? 'Proficient' : 'Not Proficient';
+    btn.style.color   = isFull ? 'var(--green)' : 'var(--muted)';
+    btn.style.borderColor = isFull ? 'var(--green)' : 'var(--border)';
+    btn.style.background  = isFull ? 'rgba(46,204,113,.08)' : 'var(--depth-inset)';
+    // Keep hidden select in sync so existing roll logic still works
+    var id  = btn.id.replace('-btn','');
+    var sel = document.getElementById(id);
+    if(sel) sel.value = btn.dataset.state;
+}
+
 // ── Field tools ────────────────────────────────────────────────────────────
 function loadModifiers(){
     const type=document.getElementById('type-sel').value;
@@ -986,9 +1245,19 @@ function loadModifiers(){
 }
 
 function primeScanners(){
-    ['v-harvest','v-results'].forEach(i=>document.getElementById(i).style.display='none');
+    ['v-harvest','v-results'].forEach(i=>{
+        let el=document.getElementById(i);
+        el.classList.remove('view-enter');
+        el.style.display='none';
+    });
     document.getElementById('v-scan').style.display='block';
-    document.getElementById('btn-cancel').style.display='none';
+    // Reset both abandon button variants
+    let dc=document.getElementById('desktop-abandon');
+    let mb=document.getElementById('mobile-abandon-bar');
+    let ts=document.getElementById('target-setup');
+    if(dc) dc.style.display='none';
+    if(mb) mb.style.display='none';
+    if(ts){ ts.style.maxHeight=''; ts.style.opacity=''; ts.style.overflow=''; ts.classList.remove('target-collapsed'); }
     document.getElementById('btn-new').style.display='none';
     document.getElementById('ready-mod').style.display='none';
     document.getElementById('chk-assess').checked=false;
@@ -1023,6 +1292,7 @@ function dualFill(){
 
 function execBook(){
     const card=document.getElementById('card-book'); if(!card.classList.contains('ready-green'))return;
+    collapseTargetModuleMobile();
     const type=document.getElementById('type-sel').value, size=document.getElementById('size-sel').value;
     const dest=document.getElementById('chk-dest').checked, over=document.getElementById('chk-over').checked;
     const sRng={Tiny:[2,3],Small:[3,4],Medium:[4,5],Large:[5,7],Huge:[7,9],Gargantuan:[9,12]};
@@ -1085,6 +1355,7 @@ function generateFlavorText(name, rarity, usedSet) {
 
 function execQuad(){
     const card=document.getElementById('card-quad'); if(!card.classList.contains('ready-purple'))return;
+    collapseTargetModuleMobile();
     let crafts=[];
     for(let n in recipeData){let r=recipeData[n];if(r.category==='Cooking')continue;if(r.components?.some(c=>targets.some(t=>c.toLowerCase().includes(t.toLowerCase()))))crafts.push(n);}
     let list=crafts.sort(()=>0.5-Math.random()).slice(0,2), hIdx=Math.floor(Math.random()*list.length), cleanHint='', tolodge=[], usedFlavors=new Set();
@@ -1117,9 +1388,26 @@ function execQuad(){
 }
 
 function initHarvest(){
+    const isMob = window.innerWidth <= 600;
+    const dc = document.getElementById('desktop-abandon');
+    const mb = document.getElementById('mobile-abandon-bar');
+
+    if(isMob){
+        // Mobile: abandon bar already shown from execBook/execQuad collapse
+        // Just make sure it's visible
+        if(mb) mb.style.display = 'block';
+    } else {
+        if(dc) dc.style.display = 'block';
+    }
+
+    // Animate v-harvest in
+    const vh = document.getElementById('v-harvest');
+    vh.style.display = 'block';
+    vh.classList.remove('view-enter');
+    void vh.offsetWidth; // reflow
+    vh.classList.add('view-enter');
+
     document.getElementById('v-scan').style.display='none';
-    document.getElementById('v-harvest').style.display='block';
-    document.getElementById('btn-cancel').style.display='inline-block';
     const type=document.getElementById('type-sel').value, skill=ckSkill[type]||'Survival', isRit=ritTypes.includes(type);
     document.getElementById('ck-assess-val').innerText='INT roll';
     document.getElementById('ck-assess-form').innerText=`[+ PB if proficient in ${skill}]`;
@@ -1129,9 +1417,24 @@ function initHarvest(){
     document.getElementById('helper-max').innerText=`${maxH} Max`;
     const hw=document.getElementById('helpers-wrap'); hw.innerHTML='';
     if(!maxH) hw.innerHTML=`<div style="color:var(--muted);font-size:.85em;text-align:center;padding:20px;font-style:italic;">No helpers for this size.</div>`;
-    else for(let i=1;i<=maxH;i++) hw.innerHTML+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="6" min="2"><select id="hpr-${i}" data-cs data-cs-compact style="flex:1;padding:6px 8px;font-size:.85em;"><option value="half">Not Proficient (+Half PB)</option><option value="full">Proficient (+Full PB)</option></select></div>`;
-    // Upgrade the dynamically generated helper selects to custom dropdowns
-    for(let i=1;i<=maxH;i++){const el=document.getElementById(`hpr-${i}`);if(el)upgradeSelect(el);}
+    else for(let i=1;i<=maxH;i++) hw.innerHTML+=`
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+            <input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="12" min="2"
+                data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper ${i} PB" readonly>
+            <button type="button" id="hpr-${i}-btn" data-state="half"
+                style="flex:1;padding:6px 8px;font-size:.82em;font-family:var(--font-body);background:var(--depth-inset);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;"
+                onclick="toggleProfBtn(this)">Not Proficient</button>
+            <select id="hpr-${i}" style="display:none;"><option value="half">Not Proficient</option><option value="full">Proficient</option></select>
+        </div>`;
+    for(let i=1;i<=maxH;i++){
+        const pb=document.getElementById(`hpb-${i}`);
+        if(pb) upgradeDrum(pb);
+    }
+    // Initialise collapsible panel heights for mobile
+    document.querySelectorAll('.collapsible-body').forEach(function(b){
+        b.style.maxHeight = b.scrollHeight + 'px';
+        b.style.opacity   = '1';
+    });
     renderHTables();
 }
 
@@ -1226,7 +1529,11 @@ function getVal(name,dc,tags){
 function confirmHarvest(){
     document.getElementById('harvest-modal').style.display='none';
     document.getElementById('v-harvest').style.display='none';
-    document.getElementById('btn-cancel').style.display='none';
+    // Hide both abandon button variants
+    let dc=document.getElementById('desktop-abandon');
+    let mb=document.getElementById('mobile-abandon-bar');
+    if(dc) dc.style.display='none';
+    if(mb) mb.style.display='none';
     document.getElementById('btn-new').style.display='inline-block';
     const a=parseInt(document.getElementById('roll-assess').value), c=parseInt(document.getElementById('roll-carve').value);
     const size=document.getElementById('size-sel').value, maxH=helperLim[size];
@@ -1264,7 +1571,11 @@ function confirmHarvest(){
     });
     document.getElementById('styled-out').innerHTML=out+ruptHTML;
     document.getElementById('raw-export').innerText=raw.length?raw.join('\n'):'No parts successfully harvested.';
-    document.getElementById('v-results').style.display='block';
+    const vr=document.getElementById('v-results');
+    vr.style.display='block';
+    vr.classList.remove('view-enter');
+    void vr.offsetWidth;
+    vr.classList.add('view-enter');
 }
 function copyOut(){navigator.clipboard.writeText(document.getElementById('raw-export').innerText).then(()=>alert('Harvest list copied!'));}
 
@@ -1810,7 +2121,12 @@ function execCook(){
     let cap=''; if(nb>ri){cap=`<span style="font-size:.82em;color:var(--muted);font-style:italic;display:block;margin-top:6px;">*Roll allowed ${nb} boon(s), but essence limits this meal to ${ri}.</span>`;nb=ri;}
     let shuf=a=>[...a].sort(()=>0.5-Math.random());
     let out=document.getElementById('cook-out'); out.style.display='block';
-    if(nf>0){out.style.background='rgba(231,76,60,.1)';out.style.border='1px solid var(--red)';let f=shuf(cookFlaws).slice(0,nf);out.innerHTML=`<strong style="color:var(--red);">Failed (${fr} vs DC ${dc})</strong><br>Meal imposes <strong>${nf} Flaw(s)</strong>:<ul style="margin-top:8px;color:var(--red);padding-left:20px;"><li>${f.join('</li><li>')}</li></ul>`;}
+    if(nf>0){
+        out.style.background='rgba(231,76,60,.1)';out.style.border='1px solid var(--red)';
+        let f=shuf(cookFlaws).slice(0,nf);
+        let totalFail=m<=-13?`<div style="font-weight:bold;margin-bottom:6px;">TOTAL FAILURE — Meal is inedible.</div>`:'';
+        out.innerHTML=`<strong style="color:var(--red);">Failed (${fr} vs DC ${dc})</strong><br>${totalFail}The chef gains <strong>${nf} Flaw(s)</strong>:<ul style="margin-top:8px;color:var(--red);padding-left:20px;"><li>${f.join('</li><li>')}</li></ul>`;
+    }
     else if(nb>0){out.style.background='rgba(46,204,113,.1)';out.style.border='1px solid var(--green)';let b=shuf(cookBoons).slice(0,nb);out.innerHTML=`<strong style="color:var(--green);">Exceptional! (${fr} vs DC ${dc})</strong><br>Grants <strong>${nb} Boon(s)</strong>:<ul style="margin-top:8px;color:var(--green);padding-left:20px;"><li>${b.join('</li><li>')}</li></ul>${cap}`;}
     else{out.style.background='rgba(46,204,113,.08)';out.style.border='1px solid var(--green)';out.innerHTML=`<strong style="color:var(--green);">Standard Meal (${fr} vs DC ${dc})</strong><br><span style="color:var(--text);">Cooked properly — imparts standard effects with no additional quirks.</span>${cap}`;}
 }
@@ -2069,6 +2385,96 @@ function importShareCode() {
         msg.textContent = 'Invalid code. Please check it was copied correctly.';
     }
 }
+
+// ── Mobile carousel ────────────────────────────────────────────────────────
+(function(){
+    var current = 0;
+    var carousel = null;
+    var dots = null;
+    var hint = null;
+    var isMobile = false;
+    var touchStartX = 0;
+    var touchStartY = 0;
+
+    function init() {
+        carousel = document.getElementById('scanner-carousel');
+        dots     = document.getElementById('carousel-dots');
+        hint     = document.getElementById('carousel-hint');
+        if (!carousel) return;
+
+        isMobile = window.innerWidth <= 600;
+        setVisible(isMobile);
+
+        carousel.addEventListener('touchstart', onTouchStart, { passive: true });
+        carousel.addEventListener('touchend',   onTouchEnd,   { passive: true });
+        window.addEventListener('resize', function() {
+            isMobile = window.innerWidth <= 600;
+            setVisible(isMobile);
+            if (isMobile) applyPosition(false);
+        });
+    }
+
+    function setVisible(show) {
+        if (dots) dots.style.display = show ? 'flex' : 'none';
+        if (hint) hint.style.display = show ? 'block' : 'none';
+    }
+
+    function applyPosition(animate) {
+        var cards = carousel.querySelectorAll('.tool-card');
+        cards.forEach(function(card, i) {
+            card.style.transition = animate ? 'transform .35s cubic-bezier(.4,0,.2,1)' : 'none';
+            card.style.transform  = 'translateX(' + ((i - current) * 100) + '%)';
+        });
+        // Update carousel height to match current card
+        var activeCard = cards[current];
+        if(activeCard) {
+            // Let it size naturally — remove any fixed height override
+            carousel.style.minHeight = '';
+        }
+        var dotEls = dots ? dots.querySelectorAll('.carousel-dot') : [];
+        dotEls.forEach(function(d, i) { d.classList.toggle('active', i === current); });
+        if (hint && current > 0) hint.style.display = 'none';
+    }
+
+    function onTouchStart(e) {
+        if (!isMobile) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }
+
+    function onTouchEnd(e) {
+        if (!isMobile) return;
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        // Only swipe if horizontal movement dominates
+        if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+        var cards = carousel.querySelectorAll('.tool-card');
+        if (dx < 0 && current < cards.length - 1) current++;
+        else if (dx > 0 && current > 0) current--;
+        applyPosition(true);
+    }
+
+    window.carouselGoTo = function(idx) {
+        current = idx;
+        applyPosition(true);
+    };
+
+    // Reset carousel when tab switches back to field tools
+    var origSwitch = window.switchTab;
+    window.switchTab = function(id, btn) {
+        origSwitch(id, btn);
+        if (id === 't-field') {
+            current = 0;
+            if (isMobile) applyPosition(false);
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
 
 // ── Tooltip ────────────────────────────────────────────────────────────────
 const tt=document.getElementById('gtip');

@@ -222,6 +222,7 @@
                         <label style="margin-top: 0;">Search Specific Mundane Base:</label>
                         <input type="text" list="forge-base-list" id="forge-base-select" placeholder="Type to search..." onchange="updateMath()">
                         <datalist id="forge-base-list"></datalist>
+                        <div id="forge-base-note" style="display:none; margin-top:8px; padding:8px 10px; background:rgba(212,175,55,0.06); border-left:3px solid #d4af37; border-radius:0 4px 4px 0; font-size:0.82em; color:#aaa; line-height:1.5;"></div>
                     </div>
                 </div>
             </div>
@@ -351,9 +352,6 @@
                 <div class="stat-box full-width" id="forge-ench-check-box" style="display: none;">
                     <span class="stat-label">Phase 2: Enchanting Check</span>
                     <span class="stat-value" id="disp-ench-check" style="font-size: 1rem;">-</span>
-                    <div class="check-hint">
-                        <strong>Martial Forging:</strong> You may substitute the spellcasting check with the tool check.
-                    </div>
                 </div>
 
                 <div class="stat-box" id="forge-mfg-dc-box" style="display: none;">
@@ -541,74 +539,114 @@
     const dtTable = ["Acid", "Cold", "Fire", "Force", "Lightning", "Necrotic", "Poison", "Psychic", "Radiant", "Thunder"];
     const skillTable = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"];
 
+    // Item Save DCs by rarity
+    const itemSaveDC = { "Common": 11, "Uncommon": 13, "Rare": 15, "Very Rare": 16, "Legendary": 17, "Artifact": 18 };
+
+    // Helper: resolve sub-table placeholders automatically
+    function rollDynamicText(text, rarity) {
+        const dc = itemSaveDC[rarity] || 13;
+        text = text.replace(/\(Random Non-Physical Damage Type table\)/g,
+            `[<span class="quirk-highlight">${dtTable[Math.floor(Math.random() * dtTable.length)]}</span>]`);
+        text = text.replace(/\(Random Creature Type table\)/g,
+            `[<span class="quirk-highlight">${creatureTable[Math.floor(Math.random() * creatureTable.length)]}</span>]`);
+        text = text.replace(/\(Random Skill table\)/g,
+            `[<span class="quirk-highlight">${skillTable[Math.floor(Math.random() * skillTable.length)]}</span>]`);
+        text = text.replace(/\{DC\}/g, String(dc));
+        return text;
+    }
+
+    // Quirk pools — each entry is { w: weight, text: "..." }
+    // Weight = number of faces on the die that map to this result
+    // Manufacturing & Enchanting use d20; Cooking uses d8
     const quirksDB = {
         ManufacturingFlaws: [
-            "Poor Handiwork. Weapons suffer a -1 penalty to attack and damage rolls. Armor suffers a -1 penalty to AC. It gains the Fragile property.",
-            "Fragile. If you roll a 1 on an attack with this weapon, or are hit by a critical hit while wearing this armor, it breaks and is unusable until repaired.",
-            "Unwieldy. The item is poorly balanced. If you roll a 1 on an attack roll or ability check using this item, you drop it.",
-            "Degradable. The item falls apart and is destroyed if submerged in water for more than 1 minute.",
-            "Noisy. The item clanks loudly. You have disadvantage on Dexterity (Stealth) checks while using or wearing it.",
-            "Pungent. The item smells terrible. You have disadvantage on Charisma checks against creatures with a sense of smell.",
-            "Heavy. The item is excessively bulky. It weighs twice its normal amount.",
-            "Garish. The item is an eyesore. You have disadvantage on Charisma (Intimidation) checks while holding or wearing it.",
-            "Mediocre Finish. The item looks cheap and poorly made. Its market value is halved.",
-            "Under Insulated. If you take cold or fire damage while wearing or holding this, you take 1 additional point of damage of that type."
+            { w:6, text: "Poor/Shoddy/Abysmal Handiwork. This item is not well made. If it is a weapon, it has a -1 penalty to its attack and damage rolls. If it is armour, it has a -1 penalty to its base AC. If it is neither armour nor weapon, it gains the Fragile quirk instead." },
+            { w:2, text: "Fragile. This item is prone to breaking. If the item is a weapon, when you roll a 1 on the d20 for an attack roll using the item, the weapon breaks. If the item isn't a weapon, whenever you suffer a critical hit, roll a d20 for each fragile item you wear, hold, or carry. On a 1, the item breaks and is no longer usable." },
+            { w:2, text: "Unwieldy. This item is poorly balanced or interferes with your movement. Whenever you make an attack with this weapon, or make a Dexterity saving throw or Dexterity (Acrobatics) check while wearing or carrying it, and roll a 1 on the d20, there are consequences. If the item is a weapon, it flies 10 feet in a random direction. If the item isn't a weapon, you fall prone." },
+            { w:2, text: "Degradable. Spending time in water or other reactive environments causes this item to degrade. Roll a d20 each time it emerges after being submerged in water, or each hour it spends in a corrosive environment. On a 1, the item breaks and is no longer usable." },
+            { w:2, text: "Noisy. Something about this item squeaks or rustles. You have disadvantage on Dexterity (Stealth) checks while wearing or carrying the item, even if the item is stowed away." },
+            { w:1, text: "Pungent. This item has a distinctly off-putting odour. While wearing or carrying the item, you have disadvantage on Charisma checks against creatures that don't like bad smells, and creatures have advantage on Wisdom (Perception) checks made to detect you by smell." },
+            { w:1, text: "Heavy. This item weighs twice as much as normal." },
+            { w:1, text: "Garish. The designs and colours in this item are all wrong. While you wear or hold the item, you have disadvantage on Charisma (Intimidation) checks against creatures that can see the item." },
+            { w:1, text: "Mediocre Finish. This item looks like crap and is worth half its normal value." },
+            { w:1, text: "Under Insulated. Something about this item conducts heat or is under-insulated. While wearing or carrying the item, whenever you take cold or fire damage, you take an additional 1d8 damage of the same type." },
+            { w:1, text: "Dangerous. When you make an attack with this item, while wearing this clothing or armour, or while holding this held item, the range of values that result in a critical fail increases by 1 (e.g. from a result of 1, to a result of 1-2 on the d20)." }
         ],
         ManufacturingBoons: [
-            "Durable. The item is incredibly sturdy. It has triple its normal hit points.",
-            "Unreactive. The item is immune to nonmagical corrosion, rust, and degradation.",
-            "Lightweight. The item weighs half its normal amount. If it is a melee weapon, it gains the Light property.",
-            "Magnificent Finish. The item is a work of art. Its market value is doubled.",
-            "Flashy. When visible, you have advantage on Charisma (Persuasion) checks made to interact with nobles, merchants, and high society.",
-            "Insulated. You have advantage on saving throws against extreme weather and effects like Heat Metal.",
-            "Grippy. You have advantage on saving throws or checks to avoid being disarmed of this item.",
-            "Quick Release. Armor takes 10 times less time to don or doff. Weapons can be drawn or stowed freely (no object interaction required).",
-            "Aerodynamic. If the item has a thrown range, its normal and long ranges increase by 50%.",
-            "Artisanal Craftsmanship. Weapons gain a +1 bonus to damage rolls. Armor reduces nonmagical bludgeoning, piercing, and slashing damage taken by 1."
+            { w:2, text: "Durable. The hit points of this item are tripled." },
+            { w:2, text: "Unreactive. This item resists corrosion and rot. If an environmental effect or creature would cause an item to become damaged (such as a gray ooze's Corrode Metal), roll a d20. On an 11 or higher, the item is unaffected." },
+            { w:2, text: "Lightweight. This item weighs half as much as normal at no detriment to its strength or potential to do damage. If it is a weapon with the heavy property, it loses this property. If it doesn't have the heavy property, it gains the light property." },
+            { w:2, text: "Magnificent Finish. This item's finish is on point and it is worth twice its normal value." },
+            { w:2, text: "Flashy. This item looks really cool. While you wear or hold the item, you have advantage on Charisma (Persuasion) checks against creatures that can see the item." },
+            { w:2, text: "Insulated. If this item is clothing or armour, you have advantage on Constitution saving throws against environmental effects caused by cold weather. If it is a weapon or held item, you have advantage on saving throws against the heat metal spell while holding it. If it is neither armour, clothing, a held item, nor a weapon, roll again." },
+            { w:2, text: "Grippy. You have advantage on ability checks and saving throws made to resist being disarmed of this item, or having it taken from you against your will. If the item is neither a held item nor a weapon, roll again." },
+            { w:2, text: "Quick Release. If this item is armour or a shield, it is quick to equip or stow. The time to don or doff the item is ten times quicker (a shield takes either a bonus action or an action). If the item is neither armour nor a shield, roll again." },
+            { w:2, text: "Aerodynamic. If the item has the thrown property or is ammunition, its normal and long ranges increase by 50% (rounded down; if the item is ammunition it increases the range of the weapon that fires it by 50% instead). If the item doesn't have the thrown property or isn't ammunition, roll again." },
+            { w:1, text: "Perfect Balance. If this item is a weapon, whenever you roll a 1 on the d20 when you make an attack roll with it, you can reroll the d20 and must use the new result. If this item is armour or clothing, whenever you roll a 1 on the d20 when you make a Dexterity (Acrobatics) check or Dexterity saving throw, you can reroll the d20 and must use the new result. If it is neither a weapon, clothing, nor armour, roll again." },
+            { w:1, text: "Artisanal Craftsmanship. If this item is a weapon, it has a +1 bonus to its damage rolls. If it is armour, bludgeoning, piercing, and slashing damage you take from nonmagical attacks is reduced by 1. If it is neither armour nor a weapon, roll again." }
         ],
         EnchantingFlaws: [
-            "Cursed. The item is cursed. (Roll on a GM curse table or apply a thematic curse matching the essence).",
-            "Battlerage. In combat, you must succeed on a DC 10 Wisdom saving throw at the start of your turn or be forced to attack the nearest creature.",
-            "Desensitisation. The magic dulls your senses. You become colorblind and lose 30 feet of darkvision while attuned.",
-            "Gravity Well. The item feels incredibly heavy to you. Its weight is tripled, and your walking speed is reduced by 5 feet.",
-            "Falsehood. The magic rejects honesty. Whenever you speak the absolute truth, you take 1d6 psychic damage.",
-            "Divinable. You radiate a magical signature. You can always be located by scrying or divination magic, automatically failing saving throws against such spells.",
-            "Illiteracy. The magic scrambles written words. You lose the ability to read or write any language while attuned.",
-            "Attraction. The item acts as a magical magnet. Ranged weapon attacks made against you have advantage.",
-            "Creature Sustaining. The item refuses to harm certain beings. Whenever you deal damage to a specific creature type (GM's choice), you deal half damage.",
-            "Forced Attunement. The item bonds with your soul. Once attuned, you cannot willingly un-attune from this item."
+            { w:2, text: "Cursed. This item is cursed. If it requires attunement, becoming attuned to it extends the curse to you. Otherwise, simply touching the item extends the curse to you. As long as you remain cursed, you are unwilling to part with the item, keeping it within reach at all times. [Curse nature: (Random Enchanting Flaw)]" },
+            { w:1, text: "Battlerage. When combat ends (and initiative would be ended), you must make a Wisdom saving throw (DC {DC}) unless you are immune to being charmed. On a failure, you see all creatures as enemies and must act with lethal intent. You can repeat the saving throw at the end of each of your turns, ending the effect on a success." },
+            { w:1, text: "Desensitisation. Your vision becomes shades of black and white, any darkvision you have is reduced by 30 feet and, if you don't have darkvision, you perceive all dim light as darkness. Sounds become muted, food loses its taste, and everything you touch feels numb. You have disadvantage on ability checks using Perception." },
+            { w:1, text: "Gravity Well. You weigh three times as much as normal and your speed is reduced by 5 feet." },
+            { w:1, text: "Falsehood. Each time you willingly speak the truth, you take 1d6 psychic damage. This effect can occur no more than once per minute." },
+            { w:1, text: "Divinable. Any creature with proficiency in the Arcana skill that is on the same plane as you and knows your name can, as an action, determine your exact location. If the creature is on a different plane, then it learns which plane you are on instead." },
+            { w:1, text: "Illiteracy. You can't read or write." },
+            { w:1, text: "Attraction. Ranged weapon attacks made against you have advantage to hit you." },
+            { w:1, text: "Energy Magnet. Spells, attacks, and effects that deal (Random Non-Physical Damage Type table) damage have advantage on attack rolls made to hit you, and you have disadvantage on saving throws made to resist them." },
+            { w:1, text: "Creature Sustaining. You deal only half damage to creatures of type: (Random Creature Type table)." },
+            { w:1, text: "External Monologue. Whenever you finish a long rest, you must succeed on a Wisdom saving throw (DC {DC}) or become cursed. While cursed in this way, you must speak all your internal thoughts aloud until you finish a long rest." },
+            { w:1, text: "Chain Reaction. Whenever you take (Random Non-Physical Damage Type table) damage, it triggers a chain reaction. Each creature within 10 feet of you (including you) must succeed on a Dexterity saving throw (DC {DC}), taking 3d6 damage of the same type on a failure. You automatically fail this saving throw." },
+            { w:1, text: "Rot. You appear as if you're rotting, and a putrid stench of decay follows you. Creatures other than fiends and undead are fearful of you, granting you advantage on Charisma (Intimidation) checks against them, and disadvantage on all other Charisma checks. This effect continues for 24 hours after you stop carrying or wearing this item." },
+            { w:1, text: "Malfunctioning Self-Preservation. Whenever you suffer a critical hit, you must succeed on a Constitution saving throw (DC {DC}) or become transformed into a CR 0 creature of the GM's choice for 1 hour (as per the polymorph spell)." },
+            { w:1, text: "Gullibility. You have disadvantage on Wisdom (Insight) checks." },
+            { w:1, text: "Hunted. Creatures of type (Random Creature Type table) desire this item. While within 300 feet of it, they can detect its exact location. A creature prone to deceit might try to steal it, one prone to aggression might try to kill you for it. A good and honest creature will try to buy it, offering up to 20% more than its normal sale price." },
+            { w:1, text: "Truthfulness. Each time you willingly speak a lie, you take 1d6 psychic damage. This effect can occur no more than once per minute." },
+            { w:1, text: "Alcoholic Potency. Any time you consume a magical liquid, it becomes extremely alcoholic. You must make a Constitution saving throw (DC {DC}) or gain one level of drunkenness." },
+            { w:1, text: "Forced Attunement. Regardless of whether or not this item would normally require attunement, this item requires attunement. In addition, you learn of a task which you must complete (GM's decision). After you attune to the item, you can't willingly un-attune from the item until this task is completed." }
         ],
         EnchantingBoons: [
-            "Hairology. The magical radiation alters you. Your hair changes to a vibrant, unusual color while attuned.",
-            "Favourable Pheromones. You smell faintly of sweet blooms. You have advantage on Wisdom (Animal Handling) checks.",
-            "Gambler. The magic sharpens your intuition. You gain proficiency with one type of gaming set while attuned.",
-            "Fleet. The item feels weightless. Your walking speed increases by 5 feet while attuned.",
-            "Composed. The magic calms your nerves. You have advantage on Charisma (Deception) checks.",
-            "Ray of Sunshine. As a bonus action, you can cause the item to shed bright light in a 20-foot radius and dim light for an additional 20 feet.",
-            "Cat's Landing. The magic gently repels the ground. You take half damage from falling.",
-            "Eye for Weakness. You immediately learn the lowest saving throw of any creature you hit with this item (or target with a spell from it).",
-            "Sustenance. The magic nourishes you. You require half as much food and water each day.",
-            "Power. The enchantment hums with lethal energy. Your weapon attacks and spell save DCs gain a +1 bonus."
+            { w:1, text: "Hairology. You can change the colour of your hair at will, over the course of 1 minute." },
+            { w:1, text: "Favourable Pheromones. You emit scents especially appealing to beasts and other simple creatures. You have advantage on Wisdom (Animal Handling) checks." },
+            { w:1, text: "Gambler. You have a deep understanding of gaming mechanics and statistics, and gain proficiency with all gaming sets." },
+            { w:1, text: "Gravity Void. When you are prone, you can stand up using only 5 feet of movement." },
+            { w:1, text: "Fleet. Your speed increases by 5 feet." },
+            { w:1, text: "Composed. Minor illusory magic masks any visual tics you might display. You have advantage on Charisma (Deception) checks. Creatures with truesight see through these illusions (ignore the advantaged roll)." },
+            { w:1, text: "Geolocational Position Sense. You always know which direction is north, in addition to your elevation above or below sea level." },
+            { w:1, text: "Ray of Sunshine. As a bonus action, you can shed bright light in a 20-foot radius and dim light for an additional 20 feet. You can extinguish this light as a bonus action." },
+            { w:1, text: "Cat's Landing. You take half damage from falling." },
+            { w:1, text: "Eye for Weakness. As a bonus action, you can identify which two saving throw modifiers are the lowest for a creature you can see within 60 feet of you. If more than two saving throw modifiers are tied, you learn them all." },
+            { w:1, text: "Proficient. Something about this item grants you knowledge, experience, or the aptitude to excel at certain tasks. You gain proficiency in one skill: (Random Skill table)." },
+            { w:1, text: "Sustenance. You require only half as much food and water as normal, and each time you regain hit points from a spell or magical effect, you can reroll any 1s and must use the new rolls." },
+            { w:1, text: "Creature Slaying. Attacks you make against (Random Creature Type table) creatures deal additional damage equal to your proficiency bonus on a critical hit." },
+            { w:1, text: "Insightful. You have a preternatural ability to sense deception, and have advantage on any ability check using Insight you make to determine if someone is lying to you." },
+            { w:1, text: "Oxygen Refiner. You can breathe underwater." },
+            { w:1, text: "Energy Repulsor. Spells, attacks, and effects that deal (Random Non-Physical Damage Type table) damage have disadvantage on attack rolls made to hit you, and you have advantage on saving throws made to resist them." },
+            { w:1, text: "Self-Preservation System. Whenever you are critically hit by an attack, you can use your reaction to transform into a creature of the GM's choice with a CR equal to your proficiency bonus (as per the polymorph spell, no concentration required). Once this boon is activated, it can't be activated again until the next dawn." },
+            { w:1, text: "Sidekick. You are great at giving others the help and support they need. When you use the Help action to assist a creature with an ability check or attack roll, that creature can add 1d4 to its roll." },
+            { w:1, text: "Power. You have a +1 bonus to attack rolls you make and the saving throw DCs of your spells and effects. Note: saving throws from items you wield are unaffected by this property." },
+            { w:1, text: "Additional Attunement. The number of magic items to which you can be attuned increases by one." }
         ],
         CookingFlaws: [
-            "Rottworth's Revenge. You are poisoned. While poisoned, you cannot benefit from a short or long rest.",
-            "Nauseating Nightmare. You feel violently ill. You have disadvantage on all Intelligence, Wisdom, and Charisma checks.",
-            "Tongue Tied. Your tongue swells. You can only speak one language (chosen by the GM), and you cannot cast spells with verbal components unless you succeed on a DC 10 Constitution saving throw.",
-            "Flatulence. You emit foul odors and noises. You have disadvantage on Dexterity (Stealth) and Charisma checks.",
-            "Borborygmus Bomb. Your stomach rumbles aggressively. You have disadvantage on Constitution saving throws.",
-            "High Glycemic Index. You experience a massive sugar crash. You have disadvantage on Dexterity saving throws and Initiative rolls.",
-            "Allergic Reaction. You break out in severe hives. If you do not use your action to scratch yourself each turn, your speed is halved.",
-            "Food Baby. You are uncomfortably bloated. Your speed is reduced by 5 feet and you cannot take the Dash action."
+            { w:1, text: "Rottworth's Revenge. Explosive emissions from both ends leave you poisoned and unable to benefit from short or long rests. Spells and magical effects that remove poison instead suppress the effect for 1 hour." },
+            { w:1, text: "Nauseating Nightmare. Visual and audible hallucinations cause you to become distracted. You have disadvantage on Intelligence, Wisdom, and Charisma checks, and on initiative rolls." },
+            { w:1, text: "Tongue Tied. Your tongue becomes enchanted; you can speak only in a language associated with one of the creature types whose magical component you ingested (GM's choice)." },
+            { w:1, text: "Flatulence. Foetid gases erupt from your bowels uncontrollably. You have disadvantage on Charisma checks against creatures within 30 feet of you that can smell, and you have disadvantage on Stealth checks against creatures that can smell or hear." },
+            { w:1, text: "Borborygmus Bomb. Your stomach convulses in painful cramps. You have disadvantage on saving throws made to maintain your concentration. After 1d8 hours (known only by the GM), you release a pungent miasma with the effects of the cloudkill spell, centred on yourself. This cloud lasts for 1 minute." },
+            { w:1, text: "High Glycemic Index. After 1d4 hours (known only by the GM), you have a sugar crash. Once you crash, you have disadvantage on Dexterity checks and Dexterity saving throws." },
+            { w:1, text: "Allergic Reaction. Your skin puckers into an irritating rash. You must succeed on a DC 10 Constitution saving throw at the start of each of your turns or use your action or bonus action to scratch uncontrollably." },
+            { w:1, text: "Food Baby. The meal leaves you bloated. Your speed is reduced by 5 feet." }
         ],
         CookingBoons: [
-            "Iron Gut. You have resistance to poison damage and advantage on saving throws made against the poisoned condition.",
-            "Sweet Breath. The aroma of the delicious food perfumes your breath. You have advantage on Charisma checks against creatures within 30 feet of you that can smell.",
-            "Linguistic Learning. You gain the ability to speak one language associated with the creature type of each magical component you consumed.",
-            "Slow Release Energy. The steady trickle of energy from your meal maintains your blood sugar. You have advantage on saving throws made to maintain your concentration.",
-            "Fearless Fancy. You become extraordinarily brave. You are immune to the frightened condition.",
-            "Hearty Harvest. You feel as if you could move mountains. You have advantage on Strength checks and you count as one size larger when determining your carrying capacity.",
-            "Peaceful Digestion. The next time you finish a short rest, you regain one additional hit point per Hit Die you roll. The next time you finish a long rest, you recover additional expended Hit Dice equal to your proficiency bonus.",
-            "Fast Food. The meal leaves you feeling incredibly light on your feet. Your walking speed increases by 5 feet."
+            { w:1, text: "Iron Gut. You have resistance to poison damage and advantage on saving throws made against the poisoned condition." },
+            { w:1, text: "Sweet Breath. The aroma of the delicious food perfumes your breath. You have advantage on Charisma checks against creatures within 30 feet of you that can smell." },
+            { w:1, text: "Linguistic Learning. You gain the ability to speak one language associated with the creature type of each magical component you consumed (GM's choice)." },
+            { w:1, text: "Slow Release Energy. The steady trickle of energy from your meal maintains your blood sugar. You have advantage on saving throws made to maintain your concentration." },
+            { w:1, text: "Fearless Fancy. You become extraordinarily brave. You are immune to the frightened condition." },
+            { w:1, text: "Hearty Harvest. You feel as if you could move mountains. You have advantage on Strength checks and you count as one size larger when determining your carrying capacity and the weight you can push, drag, or lift." },
+            { w:1, text: "Peaceful Digestion. The next time you finish a short rest, you regain one additional hit point per Hit Die you roll to regain hit points. The next time you finish a long rest, you recover an additional number of expended Hit Dice equal to your proficiency bonus." },
+            { w:1, text: "Fast Food. The meal leaves you energised. Your speed increases by 5 feet." }
         ]
     };
 
@@ -749,24 +787,120 @@
         updateMath();
     }
 
+    // ── Generic forge bases — items with no specific mundane recipe ──────────
+    const genericForgeBases = {
+        "Adventuring Gear Base": {
+            baseDC: 11, baseTime: 2,
+            requiredCheck: "DM Discretion",
+            note: "Tool and ability are at the DM's discretion based on the specific item being crafted.",
+            matchTypes: ["adventuring", "gear", "miscellaneous"]
+        },
+        "Ammunition Base (x20)": {
+            baseDC: 13, baseTime: 1,
+            requiredCheck: "Dexterity or Strength (Carpenter) OR Constitution or Strength (Smith) OR Dexterity (Tinker) OR Dexterity or Strength (Woodcarver)",
+            note: "Can be crafted using: Carpenter's tools (Dex or Str), Smith's tools (Con or Str), Tinker's tools (Dex), or Woodcarver's tools (Dex or Str).",
+            matchTypes: ["ammunition"]
+        },
+        "Instrument Base": {
+            baseDC: 15, baseTime: 16,
+            requiredCheck: "Dexterity or Strength (Carpenter) OR Dexterity or Strength (Woodcarver)",
+            note: "Can be crafted using: Carpenter's tools (Dex or Str) or Woodcarver's tools (Dex or Str).",
+            matchTypes: ["instrument"]
+        },
+        "Potion Base": {
+            baseDC: 15, baseTime: 2,
+            requiredCheck: "Intelligence (Alchemist) OR Constitution (Brewer) OR Intelligence (Herbalism)",
+            note: "Can be crafted using: Alchemist's supplies (Int), Brewer's supplies (Con), or Herbalism kit (Int).",
+            matchTypes: ["potion", "oil", "philter"]
+        },
+        "Ring Base": {
+            baseDC: 15, baseTime: 8,
+            requiredCheck: "Dexterity (Jeweller)",
+            note: "Crafted using Jeweller's tools (Dex).",
+            matchTypes: ["ring"]
+        },
+        "Rod Base": {
+            baseDC: 17, baseTime: 8,
+            requiredCheck: "Constitution or Dexterity (Glassblower) OR Constitution or Strength (Smith) OR Dexterity (Tinker)",
+            note: "Can be crafted using: Glassblower's tools (Con or Dex), Smith's tools (Con or Str), or Tinker's tools (Dex).",
+            matchTypes: ["rod"]
+        },
+        "Spell Scroll Base": {
+            baseDC: 15, baseTime: 2,
+            requiredCheck: "Dexterity (Calligrapher) OR Dexterity (Painter)",
+            note: "Can be crafted using: Calligrapher's supplies (Dex) or Painter's supplies (Dex).",
+            matchTypes: ["scroll", "spell scroll"]
+        },
+        "Staff Base": {
+            baseDC: 17, baseTime: 8,
+            requiredCheck: "Dexterity or Strength (Carpenter) OR Constitution or Strength (Smith) OR Dexterity (Tinker) OR Dexterity or Strength (Woodcarver)",
+            note: "Can be crafted using: Carpenter's tools (Dex or Str), Smith's tools (Con or Str), Tinker's tools (Dex), or Woodcarver's tools (Dex or Str).",
+            matchTypes: ["staff"]
+        },
+        "Wand Base": {
+            baseDC: 17, baseTime: 8,
+            requiredCheck: "Constitution or Dexterity (Glassblower) OR Constitution or Strength (Smith) OR Dexterity (Tinker)",
+            note: "Can be crafted using: Glassblower's tools (Con or Dex), Smith's tools (Con or Str), or Tinker's tools (Dex).",
+            matchTypes: ["wand"]
+        },
+        "Wondrous Item Base": {
+            baseDC: 15, baseTime: 8,
+            requiredCheck: "DM Discretion",
+            note: "The mundane component for a wondrous item is at the DM's discretion. Cost and tool vary depending on the specific item being forged.",
+            matchTypes: ["wondrous", "wondrous item", "tattoo", "cloak", "boots", "gloves", "headband", "hat", "belt", "bracers", "goggles", "amulet", "necklace", "brooch", "bag", "bag of", "cape", "robe", "mantle", "vest", "helm", "crown"]
+        }
+    };
+
     function populateForgeBase(magicType) {
         const list = document.getElementById('forge-base-list');
         list.innerHTML = '';
-        document.getElementById('forge-base-select').value = ''; 
+        document.getElementById('forge-base-select').value = '';
+        document.getElementById('forge-base-note').style.display = 'none';
         const mType = magicType.toLowerCase();
-        
+
+        // 1. Generic bases — matched by magic item type keywords
+        Object.keys(genericForgeBases).forEach(baseName => {
+            const base = genericForgeBases[baseName];
+            const matches = base.matchTypes.some(t => mType.includes(t));
+            // Wondrous Item Base is a catch-all — show if nothing else matched
+            if (matches) {
+                let opt = document.createElement('option');
+                opt.value = baseName;
+                list.appendChild(opt);
+            }
+        });
+        // Always add Wondrous Item Base as fallback if not already added
+        if (!Array.from(list.options || list.querySelectorAll('option')).some(o => o.value === 'Wondrous Item Base')) {
+            let opt = document.createElement('option');
+            opt.value = 'Wondrous Item Base';
+            list.appendChild(opt);
+        }
+
+        // 2. Specific mundane items — weapons, armour, shields
         if (typeof recipeData !== 'undefined') {
             Object.keys(recipeData).sort().forEach(item => {
                 if (recipeData[item].category === "Manufacturing") {
                     const iType = recipeData[item].type.toLowerCase();
-                    let match = (!mType.includes("weapon") && !mType.includes("armor")) || (mType.includes("weapon") && iType.includes("weapon")) || (mType.includes("armor") && iType.includes("armor"));
-                    if (match) { let opt = document.createElement('option'); opt.value = item; list.appendChild(opt); }
+                    let match = (mType.includes("weapon") && iType.includes("weapon"))
+                        || (mType.includes("armor") && (iType.includes("armor") || iType.includes("shield")))
+                        || (mType.includes("shield") && (iType.includes("shield") || iType.includes("armor")));
+                    if (match) {
+                        let opt = document.createElement('option');
+                        opt.value = item;
+                        list.appendChild(opt);
+                    }
                 }
             });
         }
+
+        // 3. Tools — at the bottom as a safety net
         if (typeof equipmentData !== 'undefined') {
             Object.keys(equipmentData).sort().forEach(item => {
-                if (equipmentData[item].type === "Tool") { let opt = document.createElement('option'); opt.value = item; list.appendChild(opt); }
+                if (equipmentData[item].type === "Tool") {
+                    let opt = document.createElement('option');
+                    opt.value = item;
+                    list.appendChild(opt);
+                }
             });
         }
     }
@@ -970,6 +1104,16 @@
                     data.mfgCheck = `Strength or Dexterity (${baseKey})`;
                     data.mfgDC = Math.max(10, baseDC - 3);
                     stats = `[FORGED BASE: Abstract item built with ${baseKey}]\nDM's Discretion on base stats.\n\n[ENCHANTMENT]\n${stats}`;
+                } else if (genericForgeBases[baseKey]) {
+                    const gBase = genericForgeBases[baseKey];
+                    baseTime += gBase.baseTime;
+                    components = [`1x ${baseKey} (Raw Materials)`, ...components.filter(c => !c.toLowerCase().includes("mundane") && !c.toLowerCase().includes("base"))];
+                    data.mfgCheck = gBase.requiredCheck;
+                    data.mfgDC = gBase.baseDC;
+                    stats = `[FORGED BASE: ${baseKey}]\n\n[ENCHANTMENT]\n${stats}`;
+                    // Show note
+                    const noteEl = document.getElementById('forge-base-note');
+                    if (noteEl) { noteEl.textContent = gBase.note; noteEl.style.display = 'block'; }
                 } else if (recipeData[baseKey]) {
                     let bData = recipeData[baseKey];
                     baseTime += bData.baseTime;
@@ -977,6 +1121,8 @@
                     data.mfgCheck = bData.requiredCheck || "DM Discretion";
                     data.mfgDC = bData.baseDC;
                     stats = `[FORGED BASE: ${baseKey}]\n${bData.stats}\n\n[ENCHANTMENT]\n${stats}`;
+                    const noteEl = document.getElementById('forge-base-note');
+                    if (noteEl) noteEl.style.display = 'none';
                 }
             } else {
                 // Not forging from scratch, but we might need to know the base cost for fallback math
@@ -998,7 +1144,39 @@
             document.getElementById('forge-ench-dc-box').style.display = 'block';
 
             document.getElementById('disp-mfg-check').innerText = data.mfgCheck;
-            document.getElementById('disp-ench-check').innerText = `${requiredCheck} OR ${data.mfgCheck}`;
+
+            // For forging, Phase 2 replaces "Spellcasting Ability" with the tool ability.
+            // The skill comes from the enchanting requiredCheck e.g. "Spellcasting Ability (Survival)" → "Survival"
+            // The tool abilities come from mfgCheck — which may have multiple options separated by " OR "
+            // e.g. "Dexterity or Strength (Woodcarver) OR Constitution or Strength (Smith)"
+            // → extract all abilities, deduplicate, combine with the enchanting skill
+            let forgingEnchCheck = requiredCheck;
+            const skillMatch = requiredCheck.match(/\(([^)]+)\)/);
+            if (skillMatch && data.mfgCheck) {
+                const skill = skillMatch[1].trim();
+                // Split on " OR " to handle multi-tool entries
+                const toolOptions = data.mfgCheck.split(/ OR /i);
+                // Extract the ability portion from each option (everything before the opening paren)
+                const abilities = toolOptions.map(opt => {
+                    const abilMatch = opt.match(/^([^(]+?)(?:\s*\(|$)/);
+                    return abilMatch ? abilMatch[1].trim() : opt.trim();
+                });
+                // Deduplicate individual ability words
+                const allAbilWords = [];
+                abilities.forEach(ab => {
+                    ab.split(/ or /i).forEach(word => {
+                        const w = word.trim();
+                        if (w && !allAbilWords.some(x => x.toLowerCase() === w.toLowerCase())) {
+                            allAbilWords.push(w);
+                        }
+                    });
+                });
+                const abilStr = allAbilWords.length > 1
+                    ? allAbilWords.slice(0, -1).join(', ') + ', or ' + allAbilWords[allAbilWords.length - 1]
+                    : allAbilWords[0] || abilities[0];
+                forgingEnchCheck = `${abilStr} (${skill})`;
+            }
+            document.getElementById('disp-ench-check').innerText = forgingEnchCheck;
             document.getElementById('disp-mfg-dc').innerText = data.mfgDC;
             document.getElementById('disp-ench-dc').innerText = baseDC;
 
@@ -1222,93 +1400,145 @@
     }
 
     // --- EXECUTION & QUIRKS ---
-    function rollDynamicText(text) {
-        if(text.includes("(Random Non-Physical Damage Type table)")) text = text.replace("(Random Non-Physical Damage Type table)", `[Damage Type: <span class="quirk-highlight">${dtTable[Math.floor(Math.random() * 10)]}</span>]`);
-        if(text.includes("(Random Creature Type table)")) text = text.replace("(Random Creature Type table)", `[Creature Type: <span class="quirk-highlight">${creatureTable[Math.floor(Math.random() * 14)]}</span>]`);
-        if(text.includes("(Random Skill table)")) text = text.replace("(Random Skill table)", `[Skill: <span class="quirk-highlight">${skillTable[Math.floor(Math.random() * 18)]}</span>]`);
-        return text;
+
+    // Build a weighted roll table from a pool of { w, text } entries
+    // Returns an array where each index maps to a pool entry index
+    function buildWeightedTable(pool) {
+        let table = [];
+        pool.forEach((entry, i) => { for (let j = 0; j < entry.w; j++) table.push(i); });
+        return table;
+    }
+
+    // Pick a quirk from a weighted pool, avoiding already-used entry indices
+    function pickWeightedQuirk(pool, usedIndices, isWondrous) {
+        // Wondrous items roll d12 for manufacturing boons (indices 0-8 only, weights 1-2)
+        let table = buildWeightedTable(pool);
+        if (isWondrous) table = table.slice(0, 12); // first 12 faces = entries 0-8
+        let idx, attempts = 0;
+        do {
+            idx = table[Math.floor(Math.random() * table.length)];
+            attempts++;
+        } while (usedIndices.includes(idx) && attempts < 200);
+        usedIndices.push(idx);
+        return { idx, roll: idx + 1, text: pool[idx].text };
+    }
+
+    // Resolve the Cursed flaw's auto-roll for curse nature
+    function resolveCursedNature(rarity) {
+        const flawPool = quirksDB.EnchantingFlaws;
+        // Roll again on enchanting flaw table (skip index 0 = Cursed itself)
+        let table = buildWeightedTable(flawPool).filter(i => i !== 0);
+        let idx = table[Math.floor(Math.random() * table.length)];
+        let natureText = rollDynamicText(flawPool[idx].text, rarity);
+        return `<span class="quirk-highlight">${flawPool[idx].text.split('.')[0]}</span>: ${natureText}`;
+    }
+
+    function renderQuirkEntry(text, uid, category, type, rarity) {
+        // Resolve [Curse nature: ...] placeholder
+        text = text.replace('[Curse nature: (Random Enchanting Flaw)]',
+            `[Curse nature: ${resolveCursedNature(rarity)}]`);
+        text = rollDynamicText(text, rarity);
+        return `<div class="quirk-entry" id="${uid}"><span class="quirk-roll">◆</span> ${text} <button class="btn-reroll" onclick="rerollQuirk('${uid}', '${category}', '${type}')">Reroll ⟳</button></div>`;
     }
 
     function evaluateQuirks(average, dc, category) {
         const diff = average - dc;
         let result = { passed: false, style: "", text: "" };
         let numBoons = 0, numFlaws = 0;
-        
-        if (diff <= -13) { 
-            result.passed = false; result.style = 'color: #ff0000; font-weight: bold; font-size: 1.2em;'; 
-            result.text = category === "Cooking" ? `TOTAL FAILURE. Meal inedible & materials destroyed.\nGained 4 Flaws on the chef!` : `TOTAL FAILURE. Materials destroyed.`;
-            return result; 
-        }
-        else if (diff <= -9) numFlaws = 3; else if (diff <= -5) numFlaws = 2; else if (diff <= -1) numFlaws = 1;
-        else if (diff <= 4) { numBoons = 0; numFlaws = 0; }
-        else if (diff <= 8) numBoons = 1; else if (diff <= 12) numBoons = 2; else numBoons = 3;
+        const rarity = activeState.rarity || "Common";
 
+        // Total failure
+        if (diff <= -13) {
+            result.passed = false;
+            result.style = 'color: #ff0000; font-weight: bold; font-size: 1.2em;';
+            if (category === "Cooking") {
+                // Cooking total failure = 4 flaws on the chef, meal inedible
+                result.passed = true; result.hasFlaws = true;
+                const pool = quirksDB.CookingFlaws;
+                const used = [];
+                let lines = [];
+                for (let i = 0; i < 4; i++) {
+                    const q = pickWeightedQuirk(pool, used, false);
+                    const uid = `quirk-${Math.random().toString(36).substr(2,9)}`;
+                    lines.push(renderQuirkEntry(q.text, uid, category, 'flaws', rarity));
+                }
+                result.style = 'color: #ff0000; font-weight: bold;';
+                result.text = `TOTAL FAILURE. Meal is inedible. The chef gains 4 Flaws:\n${lines.join('')}`;
+            } else {
+                result.text = `TOTAL FAILURE. Materials destroyed.`;
+            }
+            return result;
+        }
+
+        if (diff <= -9) numFlaws = 3;
+        else if (diff <= -5) numFlaws = 2;
+        else if (diff <= -1) numFlaws = 1;
+        else if (diff <= 4)  { numBoons = 0; numFlaws = 0; }
+        else if (diff <= 8)  numBoons = 1;
+        else if (diff <= 12) numBoons = 2;
+        else                 numBoons = 3;
+
+        // Boon caps by rarity
         let cap = 3;
         if (category === "Enchanting") {
-            let r = activeState.rarity;
-            cap = r==="Common"?0:r==="Uncommon"?1:r==="Rare"?2:3;
+            cap = rarity==="Common"?0:rarity==="Uncommon"?1:rarity==="Rare"?2:3;
         } else if (category === "Cooking") {
-            let r = document.getElementById('cook-rarity').value;
+            let r = document.getElementById('cook-rarity')?.value || "Uncommon";
             cap = r==="Uncommon"?0:r==="Rare"?1:r==="Very Rare"?2:3;
         }
         if (numBoons > cap) numBoons = cap;
 
         result.passed = true;
         result.hasFlaws = numFlaws > 0;
-        let pool = quirksDB[`${category}Flaws`], boonPool = quirksDB[`${category}Boons`];
-        let numSides = pool.length; // Use actual array length, not hardcoded
-        let boonSides = boonPool.length;
+        const flawPool = quirksDB[`${category}Flaws`];
+        const boonPool = quirksDB[`${category}Boons`];
+        // Detect wondrous item for d12 boon rule
+        const isWondrous = category === "Manufacturing" &&
+            (activeState.type || "").toLowerCase().includes("wondrous");
         window.activeQuirks[category] = { flaws: [], boons: [] };
         let outputLines = [];
 
-        const rollQuirk = (type, amt) => {
-            let sides = type === 'flaws' ? numSides : boonSides;
-            let sourcePool = type === 'flaws' ? pool : boonPool;
-            for(let i=0; i<amt; i++) {
-                let roll = 0, isValid = false, attempts = 0;
-                while(!isValid && attempts < 100) {
-                    roll = Math.floor(Math.random() * sides) + 1;
-                    if (!window.activeQuirks[category][type].includes(roll)) isValid = true;
-                    attempts++;
-                }
-                window.activeQuirks[category][type].push(roll);
-                let qText = sourcePool[roll-1] || `Quirk #${roll} (no description)`;
-                let uid = `quirk-${Math.random().toString(36).substr(2, 9)}`;
-                outputLines.push(`<div class="quirk-entry" id="${uid}"><span class="quirk-roll">[Rolled ${roll}]</span> ${rollDynamicText(qText)} <button class="btn-reroll" onclick="rerollQuirk('${uid}', '${category}', '${type}')">Reroll ⟳</button></div>`);
+        const rollQuirks = (type, amt) => {
+            const pool = type === 'flaws' ? flawPool : boonPool;
+            const used = window.activeQuirks[category][type];
+            for (let i = 0; i < amt; i++) {
+                const q = pickWeightedQuirk(pool, used, type === 'boons' && isWondrous);
+                const uid = `quirk-${Math.random().toString(36).substr(2,9)}`;
+                outputLines.push(renderQuirkEntry(q.text, uid, category, type, rarity));
             }
         };
 
-        rollQuirk('flaws', numFlaws); rollQuirk('boons', numBoons);
+        rollQuirks('flaws', numFlaws);
+        rollQuirks('boons', numBoons);
 
-        if (numBoons === 0 && numFlaws === 0) { result.style = 'color: var(--text-color);'; result.text = `Perfect craft (No Quirks).`; } 
-        else if (numFlaws > 0) { result.style = 'color: var(--fail-text);'; result.text = `Gained ${numFlaws} Flaw(s):\n${outputLines.join('')}`; } 
-        else { result.style = 'color: var(--success-text);'; result.text = `Gained ${numBoons} Boon(s):\n${outputLines.join('')}`; }
+        if (numBoons === 0 && numFlaws === 0) {
+            result.style = 'color: var(--text-color);';
+            result.text = `Perfect craft (No Quirks).`;
+        } else if (numFlaws > 0) {
+            result.style = 'color: var(--fail-text);';
+            result.text = `Gained ${numFlaws} Flaw(s):\n${outputLines.join('')}`;
+        } else {
+            result.style = 'color: var(--success-text);';
+            result.text = `Gained ${numBoons} Boon(s):\n${outputLines.join('')}`;
+        }
         return result;
     }
 
-    // THE RESTORED REROLL FUNCTION
     window.rerollQuirk = function(uid, category, type) {
-        let pool = type === 'flaws' ? quirksDB[`${category}Flaws`] : quirksDB[`${category}Boons`];
-        let numSides = pool.length;
-        let roll = 0, isValid = false, attempts = 0;
-        
-        while(!isValid && attempts < 100) {
-            roll = Math.floor(Math.random() * numSides) + 1;
-            if (!window.activeQuirks[category][type].includes(roll)) {
-                isValid = true;
-            }
-            attempts++;
-        }
-        
-        let qText = pool[roll-1] || `Quirk #${roll} (no description)`;
-        let el = document.getElementById(uid);
+        const pool = type === 'flaws' ? quirksDB[`${category}Flaws`] : quirksDB[`${category}Boons`];
+        const rarity = activeState.rarity || "Common";
+        const used = window.activeQuirks[category]?.[type] || [];
+        const isWondrous = category === "Manufacturing" &&
+            (activeState.type || "").toLowerCase().includes("wondrous");
+        const q = pickWeightedQuirk(pool, used, type === 'boons' && isWondrous);
+        const el = document.getElementById(uid);
         if (el) {
-            el.innerHTML = `<span class="quirk-roll">[Rolled ${roll}]</span> ${rollDynamicText(qText)} <button class="btn-reroll" onclick="rerollQuirk('${uid}', '${category}', '${type}')">Reroll ⟳</button>`;
-            
-            el.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
+            el.innerHTML = renderQuirkEntry(q.text, uid, category, type, rarity)
+                .replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+            el.style.backgroundColor = 'rgba(212,175,55,0.2)';
             setTimeout(() => el.style.backgroundColor = 'transparent', 500);
         }
-    }
+    };
 
     function executeCraft() {
         const rp = document.getElementById('final-result-panel');
