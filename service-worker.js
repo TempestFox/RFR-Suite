@@ -1,7 +1,7 @@
 // Hunter's Companion — Service Worker
 // CACHE_VERSION is automatically updated by GitHub Actions on every push.
 // Do not edit this line manually.
-const CACHE_VERSION = 'v20260314-1022';
+const CACHE_VERSION = 'v20260317-0544';
 const CACHE_NAME = `hunters-companion-${CACHE_VERSION}`;
 const BASE = '/RFR-Suite';
 
