@@ -96,9 +96,8 @@
         .htbl td { padding:8px 4px; border-bottom:1px solid var(--border-subtle); vertical-align:top; }
         #horder-body .hq-row { display:grid; grid-template-columns:24px 1fr auto; align-items:center; gap:var(--space-3); padding:9px var(--space-2); border-bottom:1px solid var(--border-subtle); border-radius:var(--radius-sm); cursor:grab; transition:background var(--transition), box-shadow var(--transition); touch-action:none; position:relative; }
         #horder-body .hq-row:active { cursor:grabbing; }
-        #horder-body .hq-row.is-dragging { background:rgba(212,175,55,.08); box-shadow:0 4px 16px rgba(0,0,0,.5); border-color:rgba(212,175,55,.3); cursor:grabbing; z-index:100; opacity:.95; }
-        #horder-body .hq-row.drop-gap-above { margin-top:36px; transition:margin-top 150ms ease; }
-        #horder-body .hq-row.drop-gap-below { margin-bottom:36px; transition:margin-bottom 150ms ease; }
+        #horder-body .hq-row.is-dragging { opacity:0.3; pointer-events:none; }
+        #hq-drop-line { position:fixed; left:0; right:0; height:2px; background:var(--gold); box-shadow:0 0 6px rgba(212,175,55,0.6); pointer-events:none; z-index:9999; display:none; }
         #horder-body .hq-handle { color:var(--muted); font-size:1em; display:flex; align-items:center; justify-content:center; opacity:.4; transition:opacity var(--transition); pointer-events:none; }
         #horder-body .hq-row:hover .hq-handle { opacity:.9; }
         #horder-body .hq-meta { display:flex; align-items:center; gap:var(--space-2); flex-shrink:0; }
@@ -583,6 +582,7 @@
 </head>
 <body>
 <div id="gtip" class="gtip"></div>
+<div id="hq-drop-line"></div>
 
 <!-- Harvest confirm modal -->
 <div id="harvest-modal" class="modal-ov">
@@ -824,8 +824,8 @@
               <span>Checks</span>
             </div>
             <div class="roll-box">
-              <div class="roll-row"><label class="roll-lbl">Assessment Roll</label><input type="number" id="roll-assess" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Assessment Roll" readonly></div>
-              <div class="roll-row"><label class="roll-lbl">Carving Roll</label><input type="number" id="roll-carve" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Carving Roll" readonly></div>
+              <div class="roll-row"><label class="roll-lbl">Assessment Roll</label><input type="number" id="roll-assess" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Assessment Roll"></div>
+              <div class="roll-row"><label class="roll-lbl">Carving Roll</label><input type="number" id="roll-carve" placeholder="—" class="roll-fld" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Carving Roll"></div>
             </div>
           </div>
           <div>
@@ -969,7 +969,7 @@
               <div class="roll-box">
                 <div class="roll-row">
                   <label class="roll-lbl">Your Roll</label>
-                  <input type="number" id="cook-roll" placeholder="—" class="roll-fld" style="width:110px;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Cooking Roll" readonly>
+                  <input type="number" id="cook-roll" placeholder="—" class="roll-fld" style="width:110px;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Cooking Roll">
                 </div>
                 <div class="roll-row" style="align-items:center;">
                   <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:.88em;color:var(--green);font-weight:bold;text-transform:uppercase;letter-spacing:.5px;">
@@ -977,7 +977,7 @@
                     Have a Helper?
                   </label>
                   <div id="hlp-inputs" style="display:none;gap:var(--space-2);align-items:center;">
-                    <input type="number" id="hlp-pb" placeholder="PB" style="width:80px;padding:6px 8px;font-size:.85em;" data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper PB" readonly>
+                    <input type="number" id="hlp-pb" placeholder="PB" style="width:80px;padding:6px 8px;font-size:.85em;" data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper PB">
                     <select id="hlp-prof" data-cs data-cs-compact style="padding:6px 8px;font-size:.85em;">
                       <option value="full">Proficient (+Full PB)</option><option value="half">Not Proficient (+Half PB)</option>
                     </select>
@@ -1006,8 +1006,8 @@
             <option>Blood</option><option>Bone</option><option>Brain</option><option>Egg</option><option>Eye</option>
             <option>Fat</option><option>Flesh</option><option>Heart</option><option>Liver</option><option>Spice</option>
           </select>
-          <input type="number" id="raw-con" placeholder="CON Mod" style="margin:0;" data-drum data-drum-min="-5" data-drum-max="10" data-drum-start="0" data-drum-label="CON Modifier" readonly>
-          <input type="number" id="raw-roll" placeholder="Save Result" style="margin:0;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Save Result" readonly>
+          <input type="number" id="raw-con" placeholder="CON Mod" style="margin:0;" data-drum data-drum-min="-5" data-drum-max="10" data-drum-start="0" data-drum-label="CON Modifier">
+          <input type="number" id="raw-roll" placeholder="Save Result" style="margin:0;" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Save Result">
         </div>
         <div class="raw-crit">
           <label class="raw-crit-lbl"><input type="radio" name="rcrit" value="none" checked><span>Normal Roll</span></label>
@@ -1068,7 +1068,7 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); align-items:flex-end;">
         <div>
           <label>Your Roll (d20 + ability mod + prof)</label>
-          <input type="number" id="sk-roll" placeholder="—" min="1" max="100" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Removal Roll" readonly>
+          <input type="number" id="sk-roll" placeholder="—" min="1" max="100" data-drum data-drum-min="1" data-drum-max="100" data-drum-start="10" data-drum-label="Removal Roll">
         </div>
         <div>
           <button class="btn-primary" style="width:100%; margin:0;" onclick="skResolve()">Resolve Removal</button>
@@ -1420,7 +1420,7 @@ function initHarvest(){
     else for(let i=1;i<=maxH;i++) hw.innerHTML+=`
         <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
             <input type="number" id="hpb-${i}" placeholder="PB" style="width:35%;padding:6px 8px;font-size:.85em;" max="12" min="2"
-                data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper ${i} PB" readonly>
+                data-drum data-drum-min="2" data-drum-max="12" data-drum-start="2" data-drum-label="Helper ${i} PB">
             <button type="button" id="hpr-${i}-btn" data-state="half"
                 style="flex:1;padding:6px 8px;font-size:.82em;font-family:var(--font-body);background:var(--depth-inset);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;"
                 onclick="toggleProfBtn(this)">Not Proficient</button>
@@ -1472,9 +1472,11 @@ function onHQPointerDown(e){
     e.preventDefault();
     const row=e.currentTarget, idx=parseInt(row.dataset.index);
     const ob=document.getElementById('horder-body');
-    hqDragState={ index:idx, startY:e.clientY, targetIndex:idx, listTop:ob.getBoundingClientRect().top };
-    row.classList.add('is-dragging');
+    hqDragState={ index:idx, targetIndex:idx, listEl:ob };
+    row.style.opacity='0.3';
+    row.style.pointerEvents='none';
     row.setPointerCapture(e.pointerId);
+    document.getElementById('hq-drop-line').style.display='block';
     row.addEventListener('pointermove', onHQPointerMove);
     row.addEventListener('pointerup',   onHQPointerUp);
     row.addEventListener('pointercancel', onHQPointerUp);
@@ -1482,37 +1484,46 @@ function onHQPointerDown(e){
 function onHQPointerMove(e){
     if(!hqDragState)return;
     e.preventDefault();
-    const row=e.currentTarget;
-    row.style.transform=`translateY(${e.clientY-hqDragState.startY}px)`;
-    const ob=document.getElementById('horder-body');
-    const rows=[...ob.querySelectorAll('.hq-row:not(.is-dragging)')];
-    let newTarget=hqDragState.index;
-    rows.forEach(r=>{
-        const mid=r.getBoundingClientRect().top+r.getBoundingClientRect().height/2-hqDragState.listTop;
-        const relY=e.clientY-hqDragState.listTop;
-        let ai=parseInt(r.dataset.index);
-        if(relY>mid) newTarget=ai>=hqDragState.index?ai+1:ai;
-    });
-    newTarget=Math.max(0,Math.min(queue.length-1,newTarget));
+    const listEl=hqDragState.listEl;
+    const rows=[...listEl.querySelectorAll('.hq-row')];
+    const line=document.getElementById('hq-drop-line');
+    const listRect=listEl.getBoundingClientRect();
+    let newTarget=queue.length;
+    let lineY=null;
+    for(let i=0;i<rows.length;i++){
+        const ri=parseInt(rows[i].dataset.index);
+        if(ri===hqDragState.index)continue;
+        const rect=rows[i].getBoundingClientRect();
+        if(e.clientY<rect.top+rect.height/2){
+            newTarget=ri;
+            lineY=rect.top;
+            break;
+        }
+        newTarget=ri+1;
+        lineY=rect.bottom;
+    }
+    if(lineY===null&&rows.length>0){
+        lineY=rows[rows.length-1].getBoundingClientRect().bottom;
+    }
     hqDragState.targetIndex=newTarget;
-    rows.forEach(r=>{
-        r.classList.remove('drop-gap-above','drop-gap-below');
-        let ri=parseInt(r.dataset.index);
-        if(newTarget<=hqDragState.index){ if(ri===newTarget&&ri<hqDragState.index)r.classList.add('drop-gap-above'); }
-        else{ if(ri===newTarget)r.classList.add('drop-gap-below'); }
-    });
+    if(lineY!==null){
+        line.style.top=lineY+'px';
+        line.style.left=listRect.left+'px';
+        line.style.width=listRect.width+'px';
+    }
 }
 function onHQPointerUp(e){
     if(!hqDragState)return;
     const row=e.currentTarget, from=hqDragState.index, to=hqDragState.targetIndex;
-    row.classList.remove('is-dragging');
-    row.style.transform='';
-    document.querySelectorAll('#horder-body .hq-row').forEach(r=>r.classList.remove('drop-gap-above','drop-gap-below'));
+    row.style.opacity='';
+    row.style.pointerEvents='';
+    document.getElementById('hq-drop-line').style.display='none';
     row.removeEventListener('pointermove',onHQPointerMove);
     row.removeEventListener('pointerup',onHQPointerUp);
     row.removeEventListener('pointercancel',onHQPointerUp);
     hqDragState=null;
-    if(from!==to){ const item=queue.splice(from,1)[0]; queue.splice(to,0,item); renderHTables(); }
+    const noMove=(from===to)||(to===from+1);
+    if(!noMove){ const item=queue.splice(from,1)[0]; const dest=to>from?to-1:to; queue.splice(dest,0,item); renderHTables(); }
 }
 
 function promptHarvest(){
